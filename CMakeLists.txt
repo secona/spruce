@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.20.0)
 project(Spruce LANGUAGES C CXX)
 
+include(CTest)
+
 set(CMAKE_CXX_STANDARD 17 CACHE STRING "C++ standard to conform to")
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -25,3 +27,8 @@ include_directories(${LLVM_INCLUDE_DIRS} ${MLIR_INCLUDE_DIRS})
 add_definitions(${LLVM_DEFINITIONS})
 
 add_subdirectory(tools)
+
+option(SPRUCE_INCLUDE_TESTS "Include the Spruce regression tests" ON)
+if(BUILD_TESTING AND SPRUCE_INCLUDE_TESTS)
+  add_subdirectory(test)
+endif()
