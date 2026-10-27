@@ -24,8 +24,12 @@ set(LLVM_LIBRARY_OUTPUT_INTDIR "${CMAKE_BINARY_DIR}/lib")
 set(MLIR_BINARY_DIR "${CMAKE_BINARY_DIR}")
 
 include_directories(${LLVM_INCLUDE_DIRS} ${MLIR_INCLUDE_DIRS})
+include_directories(${PROJECT_SOURCE_DIR}/include)
+include_directories(${PROJECT_BINARY_DIR}/include)
 add_definitions(${LLVM_DEFINITIONS})
 
+add_subdirectory(include/spruce/Transforms)
+add_subdirectory(lib)
 add_subdirectory(tools)
 
 option(SPRUCE_INCLUDE_TESTS "Include the Spruce regression tests" ON)
