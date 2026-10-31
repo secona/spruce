@@ -6,6 +6,7 @@
 #include "mlir/InitAllPasses.h"
 #include "mlir/Target/LLVMIR/Dialect/All.h"
 #include "mlir/Tools/mlir-opt/MlirOptMain.h"
+#include "spruce/IR/SpruceDialect.h"
 #include "spruce/Transforms/Passes.h"
 
 int main(int argc, char **argv) {
@@ -13,6 +14,7 @@ int main(int argc, char **argv) {
   mlir::spruce::registerSprucePasses();
 
   mlir::DialectRegistry registry;
+  registry.insert<mlir::spruce::SpruceDialect>();
   mlir::registerAllDialects(registry);
   mlir::registerAllExtensions(registry);
   mlir::registerAllGPUToLLVMIRTranslations(registry);
