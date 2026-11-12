@@ -1,5 +1,6 @@
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/Linalg/IR/Linalg.h"
+#include "mlir/Dialect/SparseTensor/IR/SparseTensor.h"
 #include "mlir/IR/PatternMatch.h"
 #include "mlir/Support/LLVM.h"
 #include "mlir/Transforms/GreedyPatternRewriteDriver.h"
@@ -17,6 +18,15 @@ struct LinalgGenericLowering : OpRewritePattern<linalg::GenericOp> {
 
   LogicalResult matchAndRewrite(linalg::GenericOp op,
                                 PatternRewriter &rewriter) const override {
+    auto tensorT = dyn_cast_or_null<RankedTensorType>(op.getType(0));
+    if (!tensorT)
+      return failure();
+
+    auto encoding = dyn_cast_or_null<sparse_tensor::SparseTensorEncodingAttr>(
+        tensorT.getEncoding());
+    if (!encoding)
+      return failure();
+
     return failure();
   }
 };
