@@ -1,6 +1,10 @@
-#include "spruce/Transforms/Passes.h"
-
 #include "mlir/Dialect/Func/IR/FuncOps.h"
+#include "mlir/Dialect/Linalg/IR/Linalg.h"
+#include "mlir/IR/PatternMatch.h"
+#include "mlir/Support/LLVM.h"
+#include "mlir/Transforms/GreedyPatternRewriteDriver.h"
+
+#include "spruce/Transforms/Passes.h"
 
 namespace mlir::spruce {
 #define GEN_PASS_DEF_SPRUCEGPUSPARSIFICATION
@@ -8,13 +12,26 @@ namespace mlir::spruce {
 
 namespace {
 
+struct LinalgGenericLowering : OpRewritePattern<linalg::GenericOp> {
+  using Base::Base;
+
+  LogicalResult matchAndRewrite(linalg::GenericOp op,
+                                PatternRewriter &rewriter) const override {
+    return failure();
+  }
+};
+
 struct SpruceGPUSparsification
     : impl::SpruceGPUSparsificationBase<SpruceGPUSparsification> {
   using Base::Base;
 
   void runOnOperation() override {
-    // TODO: Lower sparse contractions to GPU Tensor Core tile operations.
-    markAllAnalysesPreserved();
+    MLIRContext *ctx = &getContext();
+    RewritePatternSet patterns(ctx);
+    patterns.add<LinalgGenericLowering>(ctx);
+
+    if (applyPatternsGreedily(getOperation(), std::move(patterns)).failed())
+      return signalPassFailure();
   }
 };
 
