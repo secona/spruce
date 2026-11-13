@@ -7,4 +7,8 @@ def SpruceGPUSparsification : Pass<"spruce-gpu-sparsification", "::mlir::func::F
   let summary = "spruce-gpu-sparsification";
 }
 
+def SpruceTileMma : Pass<"spruce-tile-mma", "::mlir::func::FuncOp"> {
+  let summary = "spruce-tile-mma";
+}
+
 #endif
