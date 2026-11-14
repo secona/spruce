@@ -10,14 +10,19 @@
 
 namespace mlir::spruce {
 
-inline LogicalResult verifyF32Mma(MmaOp op, llvm::StringRef passName) {
+inline bool isF32Mma(MmaOp op) {
   RankedTensorType lhsType = op.getLhs().getType();
   RankedTensorType rhsType = op.getRhs().getType();
   RankedTensorType accType = op.getAcc().getType();
   RankedTensorType resultType = op.getResult().getType();
 
-  if (!lhsType.getElementType().isF32() || !rhsType.getElementType().isF32() ||
-      !accType.getElementType().isF32() || !resultType.getElementType().isF32())
+  return lhsType.getElementType().isF32() && rhsType.getElementType().isF32() &&
+         accType.getElementType().isF32() &&
+         resultType.getElementType().isF32();
+}
+
+inline LogicalResult verifyF32Mma(MmaOp op, llvm::StringRef passName) {
+  if (!isF32Mma(op))
     return op.emitOpError()
            << passName << " currently supports only f32 operands and result";
 

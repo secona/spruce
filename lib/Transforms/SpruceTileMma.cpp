@@ -2,7 +2,7 @@
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/Tensor/IR/Tensor.h"
 #include "mlir/IR/PatternMatch.h"
-#include "mlir/Transforms/GreedyPatternRewriteDriver.h"
+#include "mlir/Transforms/DialectConversion.h"
 #include "llvm/Support/MathExtras.h"
 
 #include "spruce/IR/SpruceDialect.h"
@@ -24,6 +24,10 @@ struct TileMmaPattern : OpRewritePattern<MmaOp> {
 
   LogicalResult matchAndRewrite(MmaOp op,
                                 PatternRewriter &rewriter) const override {
+    if (!isF32Mma(op))
+      return rewriter.notifyMatchFailure(
+          op, "currently supports only f32 operands and result");
+
     RankedTensorType lhsType = op.getLhs().getType();
     RankedTensorType rhsType = op.getRhs().getType();
     RankedTensorType resultType = op.getResult().getType();
@@ -66,11 +70,14 @@ struct TileMmaPattern : OpRewritePattern<MmaOp> {
     auto tileType = resultType.clone({tileM, tileN});
     auto extractTile = [&](Value source, int64_t row, int64_t col, int64_t rows,
                            int64_t cols) -> Value {
-      return tensor::ExtractSliceOp::create(
-          rewriter, op.getLoc(), source,
-          {rewriter.getIndexAttr(row), rewriter.getIndexAttr(col)},
-          {rewriter.getIndexAttr(rows), rewriter.getIndexAttr(cols)},
-          {rewriter.getIndexAttr(1), rewriter.getIndexAttr(1)});
+      return rewriter.createOrFold<tensor::ExtractSliceOp>(
+          op.getLoc(), source,
+          ArrayRef<OpFoldResult>{rewriter.getIndexAttr(row),
+                                 rewriter.getIndexAttr(col)},
+          ArrayRef<OpFoldResult>{rewriter.getIndexAttr(rows),
+                                 rewriter.getIndexAttr(cols)},
+          ArrayRef<OpFoldResult>{rewriter.getIndexAttr(1),
+                                 rewriter.getIndexAttr(1)});
     };
 
     Value result = paddedAcc;
@@ -82,11 +89,14 @@ struct TileMmaPattern : OpRewritePattern<MmaOp> {
           Value rhs = extractTile(paddedRhs, reduction, col, tileK, tileN);
           acc = MmaOp::create(rewriter, op.getLoc(), tileType, lhs, rhs, acc);
         }
-        result = tensor::InsertSliceOp::create(
-            rewriter, op.getLoc(), acc, result,
-            {rewriter.getIndexAttr(row), rewriter.getIndexAttr(col)},
-            {rewriter.getIndexAttr(tileM), rewriter.getIndexAttr(tileN)},
-            {rewriter.getIndexAttr(1), rewriter.getIndexAttr(1)});
+        result = rewriter.createOrFold<tensor::InsertSliceOp>(
+            op.getLoc(), acc, result,
+            ArrayRef<OpFoldResult>{rewriter.getIndexAttr(row),
+                                   rewriter.getIndexAttr(col)},
+            ArrayRef<OpFoldResult>{rewriter.getIndexAttr(tileM),
+                                   rewriter.getIndexAttr(tileN)},
+            ArrayRef<OpFoldResult>{rewriter.getIndexAttr(1),
+                                   rewriter.getIndexAttr(1)});
       }
     }
 
@@ -102,21 +112,18 @@ struct SpruceTileMma : impl::SpruceTileMmaBase<SpruceTileMma> {
   using Base::Base;
 
   void runOnOperation() override {
-    // A pattern match failure does not fail the greedy driver, so validate
-    // unsupported inputs before rewriting any operations.
-    WalkResult result = getOperation().walk([this](MmaOp op) {
-      return failed(verifyF32Mma(op, getArgument())) ? WalkResult::interrupt()
-                                                     : WalkResult::advance();
+    ConversionTarget target(getContext());
+    target.addLegalDialect<arith::ArithDialect, tensor::TensorDialect>();
+    target.addDynamicallyLegalOp<MmaOp>([](MmaOp op) {
+      auto [m, n, k] = getMNK(op.getLhs().getType(), op.getRhs().getType());
+      return isF32Mma(op) && m == tileM && n == tileN && k == tileK;
     });
-    if (result.wasInterrupted()) {
-      signalPassFailure();
-      return;
-    }
 
     RewritePatternSet patterns(&getContext());
     patterns.add<TileMmaPattern>(&getContext());
 
-    if (failed(applyPatternsGreedily(getOperation(), std::move(patterns))))
+    if (applyPartialConversion(getOperation(), target, std::move(patterns))
+            .failed())
       signalPassFailure();
   }
 };

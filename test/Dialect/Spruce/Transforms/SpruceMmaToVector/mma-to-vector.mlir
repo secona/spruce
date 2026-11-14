@@ -1,5 +1,5 @@
-// RUN: spruce-opt -spruce-mma-to-vector -verify-roundtrip %s | FileCheck %s --implicit-check-not=spruce.mma
-// RUN: spruce-opt -spruce-mma-to-vector -spruce-mma-to-vector -verify-roundtrip %s | FileCheck %s --implicit-check-not=spruce.mma
+// RUN: spruce-opt -spruce-mma-to-vector -canonicalize -cse -verify-roundtrip %s | FileCheck %s --implicit-check-not=spruce.mma
+// RUN: spruce-opt -spruce-mma-to-vector -spruce-mma-to-vector -canonicalize -cse -verify-roundtrip %s | FileCheck %s --implicit-check-not=spruce.mma
 
 // CHECK-DAG: #[[TRANSPOSE:.*]] = affine_map<(d0, d1) -> (d1, d0)>
 // CHECK-DAG: #[[LHS_MAP:.*]] = affine_map<(d0, d1, d2) -> (d0, d2)>
@@ -59,12 +59,11 @@ func.func @rectangular_mma(%lhs: tensor<3x5xf32>, %rhs: tensor<5x7xf32>, %acc: t
 // CHECK:         %[[RHS_VEC0:.*]] = vector.transfer_read %[[RHS0]][%[[C0]], %[[C0]]], %[[ZERO]]
 // CHECK:         %[[ACC_VEC:.*]] = vector.transfer_read %[[ACC]][%[[C0]], %[[C0]]], %[[ZERO]]
 // CHECK:         %[[PART:.*]] = vector.contract {{.*}} %[[LHS_VEC0]], %[[RHS_VEC0]], %[[ACC_VEC]] : vector<16x8xf32>, vector<8x8xf32> into vector<16x8xf32>
-// CHECK:         %[[PART_TENSOR:.*]] = vector.transfer_write %[[PART]], %[[ACC]][%[[C0]], %[[C0]]] {in_bounds = [true, true]} : vector<16x8xf32>, tensor<16x8xf32>
 
 // CHECK:         %[[LHS_VEC1:.*]] = vector.transfer_read %[[LHS1]][%[[C0]], %[[C0]]], %[[ZERO]]
 // CHECK:         %[[RHS_VEC1:.*]] = vector.transfer_read %[[RHS1]][%[[C0]], %[[C0]]], %[[ZERO]]
 // CHECK:         %[[PRODUCT:.*]] = vector.contract {{.*}} %[[LHS_VEC1]], %[[RHS_VEC1]], %[[PART]] : vector<16x8xf32>, vector<8x8xf32> into vector<16x8xf32>
-// CHECK:         %[[RESULT:.*]] = vector.transfer_write %[[PRODUCT]], %[[PART_TENSOR]][%[[C0]], %[[C0]]] {in_bounds = [true, true]} : vector<16x8xf32>, tensor<16x8xf32>
+// CHECK:         %[[RESULT:.*]] = vector.transfer_write %[[PRODUCT]], %[[ACC]][%[[C0]], %[[C0]]] {in_bounds = [true, true]} : vector<16x8xf32>, tensor<16x8xf32>
 // CHECK:         return %[[RESULT]] : tensor<16x8xf32>
 
 func.func @chained_mma(%lhs0: tensor<16x8xf32>, %rhs0: tensor<8x8xf32>, %lhs1: tensor<16x8xf32>, %rhs1: tensor<8x8xf32>, %acc: tensor<16x8xf32>) -> tensor<16x8xf32> {

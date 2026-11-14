@@ -1,8 +1,9 @@
 #include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
+#include "mlir/Dialect/Vector/IR/VectorDialect.h"
 #include "mlir/Dialect/Vector/IR/VectorOps.h"
 #include "mlir/IR/PatternMatch.h"
-#include "mlir/Transforms/GreedyPatternRewriteDriver.h"
+#include "mlir/Transforms/DialectConversion.h"
 
 #include "spruce/IR/SpruceDialect.h"
 #include "spruce/Transforms/MmaUtils.h"
@@ -19,6 +20,10 @@ struct MmaToVectorConversion : OpRewritePattern<MmaOp> {
 
   LogicalResult matchAndRewrite(MmaOp op,
                                 PatternRewriter &rewriter) const override {
+    if (!isF32Mma(op))
+      return rewriter.notifyMatchFailure(
+          op, "currently supports only f32 operands and result");
+
     RankedTensorType lhsType = op.getLhs().getType();
     RankedTensorType rhsType = op.getRhs().getType();
     auto [m, n, k] = getMNK(lhsType, rhsType);
@@ -72,20 +77,18 @@ struct SpruceMmaToVector : impl::SpruceMmaToVectorBase<SpruceMmaToVector> {
   using Base::Base;
 
   void runOnOperation() override {
-    WalkResult result = getOperation().walk([this](MmaOp op) {
-      return failed(verifyF32Mma(op, getArgument())) ? WalkResult::interrupt()
-                                                     : WalkResult::advance();
-    });
-    if (result.wasInterrupted()) {
-      signalPassFailure();
-      return;
-    }
+    ConversionTarget target(getContext());
+    target.addLegalDialect<arith::ArithDialect, vector::VectorDialect>();
+    target.addIllegalOp<spruce::MmaOp>();
 
     RewritePatternSet patterns(&getContext());
     patterns.add<MmaToVectorConversion>(&getContext());
 
-    if (failed(applyPatternsGreedily(getOperation(), std::move(patterns))))
+    if (applyPartialConversion(getOperation(), target, std::move(patterns))
+            .failed()) {
       signalPassFailure();
+      return;
+    }
   }
 };
 
