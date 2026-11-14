@@ -12,4 +12,9 @@ def SpruceTileMma : Pass<"spruce-tile-mma", "::mlir::func::FuncOp"> {
   let dependentDialects = ["::mlir::arith::ArithDialect", "::mlir::tensor::TensorDialect"];
 }
 
+def SpruceMmaToVector : Pass<"spruce-mma-to-vector", "::mlir::func::FuncOp"> {
+  let summary = "spruce-mma-to-vector";
+  let dependentDialects = ["::mlir::arith::ArithDialect", "::mlir::vector::VectorDialect"];
+}
+
 #endif

@@ -6,6 +6,7 @@
 #include "llvm/Support/MathExtras.h"
 
 #include "spruce/IR/SpruceDialect.h"
+#include "spruce/Transforms/MmaUtils.h"
 #include "spruce/Transforms/Passes.h"
 
 namespace mlir::spruce {
@@ -18,21 +19,6 @@ constexpr int64_t tileM = 16;
 constexpr int64_t tileN = 8;
 constexpr int64_t tileK = 8;
 
-LogicalResult verifyTileableMma(MmaOp op) {
-  RankedTensorType lhsType = op.getLhs().getType();
-  RankedTensorType rhsType = op.getRhs().getType();
-  RankedTensorType accType = op.getAcc().getType();
-  RankedTensorType resultType = op.getResult().getType();
-
-  if (!lhsType.getElementType().isF32() || !rhsType.getElementType().isF32() ||
-      !accType.getElementType().isF32() || !resultType.getElementType().isF32())
-    return op.emitOpError(
-        "spruce-tile-mma currently supports only f32 operands "
-        "and result");
-
-  return success();
-}
-
 struct TileMmaPattern : OpRewritePattern<MmaOp> {
   using Base::Base;
 
@@ -42,9 +28,7 @@ struct TileMmaPattern : OpRewritePattern<MmaOp> {
     RankedTensorType rhsType = op.getRhs().getType();
     RankedTensorType resultType = op.getResult().getType();
 
-    int64_t m = lhsType.getDimSize(0);
-    int64_t k = lhsType.getDimSize(1);
-    int64_t n = rhsType.getDimSize(1);
+    auto [m, n, k] = getMNK(lhsType, rhsType);
 
     // Newly created MMA tiles must not match this pattern again.
     if (m == tileM && n == tileN && k == tileK)
@@ -120,9 +104,9 @@ struct SpruceTileMma : impl::SpruceTileMmaBase<SpruceTileMma> {
   void runOnOperation() override {
     // A pattern match failure does not fail the greedy driver, so validate
     // unsupported inputs before rewriting any operations.
-    WalkResult result = getOperation().walk([](MmaOp op) {
-      return failed(verifyTileableMma(op)) ? WalkResult::interrupt()
-                                           : WalkResult::advance();
+    WalkResult result = getOperation().walk([this](MmaOp op) {
+      return failed(verifyF32Mma(op, getArgument())) ? WalkResult::interrupt()
+                                                     : WalkResult::advance();
     });
     if (result.wasInterrupted()) {
       signalPassFailure();
