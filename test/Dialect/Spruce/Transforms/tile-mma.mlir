@@ -43,11 +43,27 @@ func.func @multiple_tiles(%lhs: tensor<32x16xf32>, %rhs: tensor<16x16xf32>, %acc
 }
 
 // CHECK-LABEL: func.func @empty_reduction(
-// CHECK-SAME: %{{.*}}: tensor<16x0xf32>, %{{.*}}: tensor<0x8xf32>, %[[ACC:.*]]: tensor<16x8xf32>
-// CHECK-NEXT: return %[[ACC]] : tensor<16x8xf32>
-func.func @empty_reduction(%lhs: tensor<16x0xf32>, %rhs: tensor<0x8xf32>, %acc: tensor<16x8xf32>) -> tensor<16x8xf32> {
-  %result = spruce.mma %lhs, %rhs, %acc : tensor<16x0xf32>, tensor<0x8xf32>, tensor<16x8xf32> -> tensor<16x8xf32>
-  return %result : tensor<16x8xf32>
+// CHECK-SAME: %{{.*}}: tensor<3x0xf32>, %{{.*}}: tensor<0x7xf32>, %[[ACC:.*]]: tensor<3x7xf32>
+// CHECK-NEXT: return %[[ACC]] : tensor<3x7xf32>
+func.func @empty_reduction(%lhs: tensor<3x0xf32>, %rhs: tensor<0x7xf32>, %acc: tensor<3x7xf32>) -> tensor<3x7xf32> {
+  %result = spruce.mma %lhs, %rhs, %acc : tensor<3x0xf32>, tensor<0x7xf32>, tensor<3x7xf32> -> tensor<3x7xf32>
+  return %result : tensor<3x7xf32>
+}
+
+// CHECK-LABEL: func.func @empty_rows(
+// CHECK-SAME: %{{.*}}: tensor<0x5xf32>, %{{.*}}: tensor<5x7xf32>, %[[ACC:.*]]: tensor<0x7xf32>
+// CHECK-NEXT: return %[[ACC]] : tensor<0x7xf32>
+func.func @empty_rows(%lhs: tensor<0x5xf32>, %rhs: tensor<5x7xf32>, %acc: tensor<0x7xf32>) -> tensor<0x7xf32> {
+  %result = spruce.mma %lhs, %rhs, %acc : tensor<0x5xf32>, tensor<5x7xf32>, tensor<0x7xf32> -> tensor<0x7xf32>
+  return %result : tensor<0x7xf32>
+}
+
+// CHECK-LABEL: func.func @empty_columns(
+// CHECK-SAME: %{{.*}}: tensor<3x5xf32>, %{{.*}}: tensor<5x0xf32>, %[[ACC:.*]]: tensor<3x0xf32>
+// CHECK-NEXT: return %[[ACC]] : tensor<3x0xf32>
+func.func @empty_columns(%lhs: tensor<3x5xf32>, %rhs: tensor<5x0xf32>, %acc: tensor<3x0xf32>) -> tensor<3x0xf32> {
+  %result = spruce.mma %lhs, %rhs, %acc : tensor<3x5xf32>, tensor<5x0xf32>, tensor<3x0xf32> -> tensor<3x0xf32>
+  return %result : tensor<3x0xf32>
 }
 
 // CHECK-LABEL: func.func @no_mma(

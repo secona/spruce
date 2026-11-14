@@ -9,7 +9,7 @@ def SpruceGPUSparsification : Pass<"spruce-gpu-sparsification", "::mlir::func::F
 
 def SpruceTileMma : Pass<"spruce-tile-mma", "::mlir::func::FuncOp"> {
   let summary = "spruce-tile-mma";
-  let dependentDialects = ["::mlir::tensor::TensorDialect"];
+  let dependentDialects = ["::mlir::arith::ArithDialect", "::mlir::tensor::TensorDialect"];
 }
 
 #endif
