@@ -5,6 +5,8 @@ include "mlir/Pass/PassBase.td"
 
 def SpruceGPUSparsification : Pass<"spruce-gpu-sparsification", "::mlir::func::FuncOp"> {
   let summary = "spruce-gpu-sparsification";
+  let dependentDialects = ["::mlir::arith::ArithDialect", "::mlir::tensor::TensorDialect",
+                           "::mlir::spruce::SpruceDialect"];
 }
 
 def SpruceTileMma : Pass<"spruce-tile-mma", "::mlir::func::FuncOp"> {

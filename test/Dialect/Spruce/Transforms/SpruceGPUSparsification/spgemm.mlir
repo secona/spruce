@@ -5,6 +5,7 @@
   map = (i, j) -> (i : dense, j : compressed)
 }>
 
+// CHECK-LABEL: func.func @spgemm(
 func.func @spgemm(%A: tensor<?x?xf32, #CSR>,
                   %B: tensor<?x?xf32, #CSR>) -> tensor<?x?xf32, #CSR> {
   %c0 = arith.constant 0 : index
@@ -45,13 +46,18 @@ func.func @spgemm(%A: tensor<?x?xf32, #CSR>,
   )
 }>
 
-func.func @spgemm(%A: tensor<?x?xf32, #BSR>,
-                  %B: tensor<?x?xf32, #BSR>) -> tensor<?x?xf32, #BSR> {
+// CHECK-LABEL: func.func @spgemm(
+// CHECK-SAME:      %[[A:[^:]+]]: tensor<16x16xf32, #[[BSR]]>,
+// CHECK-SAME:      %[[B:[^:]+]]: tensor<16x16xf32, #[[BSR]]>) -> tensor<16x16xf32, #[[BSR]]>
+// CHECK:         %[[C:.*]] = tensor.empty() : tensor<16x16xf32>
+// CHECK:         %[[D:.*]] = spruce.mma %[[A]], %[[B]], %[[C]] : tensor<16x16xf32, #[[BSR]]>, tensor<16x16xf32, #[[BSR]]>, tensor<16x16xf32> -> tensor<16x16xf32, #[[BSR]]>
+// CHECK:         return %[[D]] : tensor<16x16xf32, #[[BSR]]>
+
+func.func @spgemm(%A: tensor<16x16xf32, #BSR>,
+                  %B: tensor<16x16xf32, #BSR>) -> tensor<16x16xf32, #BSR> {
   %c0 = arith.constant 0 : index
   %c1 = arith.constant 1 : index
-  %m = tensor.dim %A, %c0 : tensor<?x?xf32, #BSR>
-  %n = tensor.dim %B, %c1 : tensor<?x?xf32, #BSR>
-  %C = tensor.empty(%m, %n) : tensor<?x?xf32, #BSR>
+  %C = tensor.empty() : tensor<16x16xf32, #BSR>
   %result = linalg.generic {
     indexing_maps = [
       affine_map<(i,k,j) -> (i,j)>,
@@ -63,12 +69,12 @@ func.func @spgemm(%A: tensor<?x?xf32, #BSR>,
       "parallel",
       "reduction"
     ]
-  } ins(%A, %B: tensor<?x?xf32, #BSR>, tensor<?x?xf32, #BSR>)
-    outs(%C: tensor<?x?xf32, #BSR>) {
+  } ins(%A, %B: tensor<16x16xf32, #BSR>, tensor<16x16xf32, #BSR>)
+    outs(%C: tensor<16x16xf32, #BSR>) {
     ^bb0(%a: f32, %b: f32, %c: f32):
       %product = arith.mulf %a, %b : f32
       %sum = arith.addf %c, %product : f32
       linalg.yield %sum : f32
-  } -> tensor<?x?xf32, #BSR>
-  return %result : tensor<?x?xf32, #BSR>
+  } -> tensor<16x16xf32, #BSR>
+  return %result : tensor<16x16xf32, #BSR>
 }

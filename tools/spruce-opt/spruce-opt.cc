@@ -1,5 +1,6 @@
 // --- spruce-opt.cc: Spruce optimizer driver ----------------------------------
 
+#include "mlir/Dialect/Arith/IR/ArithDialect.h"
 #include "mlir/Dialect/Tensor/IR/TensorDialect.h"
 #include "mlir/IR/DialectRegistry.h"
 #include "mlir/InitAllDialects.h"
@@ -15,7 +16,7 @@ int main(int argc, char **argv) {
   mlir::spruce::registerSprucePasses();
 
   mlir::DialectRegistry registry;
-  registry.insert<mlir::spruce::SpruceDialect, mlir::tensor::TensorDialect>();
+  registry.insert<mlir::spruce::SpruceDialect, mlir::tensor::TensorDialect, mlir::arith::ArithDialect>();
   mlir::registerAllDialects(registry);
   mlir::registerAllExtensions(registry);
   mlir::registerAllGPUToLLVMIRTranslations(registry);
