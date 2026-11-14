@@ -28,11 +28,8 @@ struct TileMmaPattern : OpRewritePattern<MmaOp> {
       return rewriter.notifyMatchFailure(
           op, "currently supports only f32 operands and result");
 
-    RankedTensorType lhsType = op.getLhs().getType();
-    RankedTensorType rhsType = op.getRhs().getType();
+    auto [m, n, k] = op.getMNK();
     RankedTensorType resultType = op.getResult().getType();
-
-    auto [m, n, k] = getMNK(lhsType, rhsType);
 
     // Newly created MMA tiles must not match this pattern again.
     if (m == tileM && n == tileN && k == tileK)

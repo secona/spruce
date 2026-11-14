@@ -22,6 +22,16 @@ def Spruce_MmaOp : Spruce_Op<"mma"> {
     `->` type($result)
   }];
 
+  let extraClassDeclaration = [{
+    std::int64_t getM() { return getLhs().getType().getDimSize(0); }
+    std::int64_t getN() { return getRhs().getType().getDimSize(1); }
+    std::int64_t getK() { return getLhs().getType().getDimSize(1); }
+
+    std::tuple<std::int64_t, std::int64_t, std::int64_t> getMNK() {
+      return {getM(), getN(), getK()};
+    }
+  }];
+
   let hasVerifier = 1;
 }
 
