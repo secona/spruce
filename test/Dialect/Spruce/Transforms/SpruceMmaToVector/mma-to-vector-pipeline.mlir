@@ -1,5 +1,5 @@
 // RUN: spruce-opt -spruce-tile-mma -spruce-mma-to-vector -one-shot-bufferize="bufferize-function-boundaries function-boundary-type-conversion=identity-layout-map" -verify-roundtrip %s | FileCheck %s --check-prefix=BUFFERIZE --implicit-check-not=spruce.mma --implicit-check-not='tensor<'
-// RUN: spruce-opt -spruce-tile-mma -spruce-mma-to-vector -one-shot-bufferize="bufferize-function-boundaries function-boundary-type-conversion=identity-layout-map" -convert-vector-to-gpu="use-nvgpu=true" -canonicalize -verify-roundtrip %s | FileCheck %s --check-prefix=NVGPU --implicit-check-not=spruce.mma --implicit-check-not=vector.contract --implicit-check-not='tensor<'
+// RUN: spruce-opt -spruce-tile-mma -spruce-mma-to-vector -one-shot-bufferize="bufferize-function-boundaries function-boundary-type-conversion=identity-layout-map" -convert-vector-to-nvgpu -canonicalize -verify-roundtrip %s | FileCheck %s --check-prefix=NVGPU --implicit-check-not=spruce.mma --implicit-check-not=vector.contract --implicit-check-not='tensor<'
 
 // BUFFERIZE-DAG: #[[TRANSPOSE:.*]] = affine_map<(d0, d1) -> (d1, d0)>
 // BUFFERIZE-DAG: #[[LHS_MAP:.*]] = affine_map<(d0, d1, d2) -> (d0, d2)>
