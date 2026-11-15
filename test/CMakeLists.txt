@@ -27,6 +27,12 @@ file(GLOB_RECURSE SPRUCE_MLIR_TESTS CONFIGURE_DEPENDS
 )
 list(FILTER SPRUCE_MLIR_TESTS EXCLUDE REGEX "(^|/)Inputs/")
 
+# Keep future sparsification examples as reference inputs, not active tests.
+list(REMOVE_ITEM SPRUCE_MLIR_TESTS
+  "Dialect/Spruce/Transforms/SpruceGPUSparsification/spgemm.mlir"
+  "Dialect/Spruce/Transforms/SpruceGPUSparsification/spmv.mlir"
+)
+
 # Build-tree paths select the generated lit site configuration.
 foreach(test_file IN LISTS SPRUCE_MLIR_TESTS)
   add_test(NAME "spruce/${test_file}"
