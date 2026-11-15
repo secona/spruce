@@ -14,3 +14,22 @@ ctest --test-dir build --output-on-failure
 ```
 
 Adjust `MLIR_DIR` and `LLVM_DIR` as needed.
+
+## Lowering Progress
+
+Run the current lowering pipeline with:
+
+```sh
+build/bin/spruce-opt --spruce-pipeline input.mlir
+```
+
+The pipeline runs target selection, GPU sparsification, MMA tiling, MMA-to-vector
+lowering, canonicalization, and common subexpression elimination.
+
+The main progress test is
+[spgemm-bsr-dense-dense.mlir](test/Dialect/Spruce/Transforms/SprucePipeline/spgemm-bsr-dense-dense.mlir).
+It uses the same tile-aligned input as the GPU sparsification test and checks the
+current endpoint: SCF loops with vector contractions. Sparse block access still
+uses `spruce.num_blocks`, `spruce.block_coordinates`, and `spruce.get_block`;
+lowering those operations is needed before proceeding to full bufferization and
+GPU instruction lowering.

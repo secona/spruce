@@ -3,6 +3,10 @@
 
 include "mlir/Pass/PassBase.td"
 
+def SprucePipeline : Pass<"spruce-pipeline", "::mlir::ModuleOp"> {
+  let summary = "spruce-pipeline";
+}
+
 def SpruceSelectTarget : Pass<"spruce-select-target", "::mlir::func::FuncOp"> {
   let summary = "Select a GPU execution tile configuration";
   let description = [{
