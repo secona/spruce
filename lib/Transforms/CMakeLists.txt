@@ -1,6 +1,7 @@
 add_mlir_library(SpruceTransforms
   SpruceGPUSparsification.cpp
   SpruceMmaToVector.cpp
+  SpruceSelectTarget.cpp
   SpruceTileMma.cpp
 
   DEPENDS
@@ -10,6 +11,7 @@ add_mlir_library(SpruceTransforms
   SpruceDialect
   MLIRArithDialect
   MLIRFuncDialect
+  MLIRLinalgDialect
   MLIRPass
   MLIRSCFDialect
   MLIRSparseTensorDialect

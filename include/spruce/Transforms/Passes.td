@@ -3,6 +3,19 @@
 
 include "mlir/Pass/PassBase.td"
 
+def SpruceSelectTarget : Pass<"spruce-select-target", "::mlir::func::FuncOp"> {
+  let summary = "Select a GPU execution tile configuration";
+  let description = [{
+    Annotates rank-2 tensor contractions expressed as linalg.generic operations
+    with a spruce.target attribute containing the selected MMA dimensions.
+    This prototype selects M=16, N=8, K=8, matching the existing MMA tiling pass.
+    Existing target annotations, sparse storage encodings, and block shapes are
+    preserved; subsequent passes can use the annotation to construct execution
+    tiles.
+  }];
+  let dependentDialects = ["::mlir::spruce::SpruceDialect"];
+}
+
 def SpruceGPUSparsification : Pass<"spruce-gpu-sparsification", "::mlir::func::FuncOp"> {
   let summary = "spruce-gpu-sparsification";
   let dependentDialects = [
