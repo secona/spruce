@@ -61,4 +61,18 @@ def Spruce_NumBlocksOp : Spruce_Op<"num_blocks"> {
   }];
 }
 
+def Spruce_BlockCoordinatesOp : Spruce_Op<"block_coordinates"> {
+  let arguments = (ins
+    AnyRankedTensor:$tensor,
+    Index:$blockIndex);
+
+  let results = (outs
+    Index:$row,
+    Index:$col);
+
+  let assemblyFormat = [{
+    $tensor `[` $blockIndex `]` attr-dict `:` type($tensor)
+  }];
+}
+
 #endif
