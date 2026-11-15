@@ -49,4 +49,16 @@ def Spruce_GetBlockOp : Spruce_Op<"get_block"> {
   }];
 }
 
+def Spruce_NumBlocksOp : Spruce_Op<"num_blocks"> {
+  let arguments = (ins
+    AnyRankedTensor:$tensor);
+
+  let results = (outs
+    Index:$result);
+
+  let assemblyFormat = [{
+    $tensor attr-dict `:` type($tensor)
+  }];
+}
+
 #endif
