@@ -3,6 +3,7 @@
 #include "mlir/Dialect/Linalg/IR/Linalg.h"
 #include "mlir/Dialect/SparseTensor/IR/SparseTensor.h"
 #include "mlir/Dialect/Tensor/IR/Tensor.h"
+#include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/IR/PatternMatch.h"
 #include "mlir/Support/LLVM.h"
 #include "mlir/Transforms/GreedyPatternRewriteDriver.h"
@@ -15,6 +16,8 @@ namespace mlir::spruce {
 #include "spruce/Transforms/Passes.h.inc"
 
 namespace {
+
+using namespace sparse_tensor;
 
 bool isMatmul(linalg::GenericOp op) {
   auto maps = op.getIndexingMapsArray();
@@ -78,19 +81,37 @@ struct LinalgGenericLowering : OpRewritePattern<linalg::GenericOp> {
 
   LogicalResult matchAndRewrite(linalg::GenericOp op,
                                 PatternRewriter &rewriter) const override {
-    auto tensorT = dyn_cast_or_null<RankedTensorType>(op.getType(0));
-    if (!tensorT)
+    auto inputs = op.getDpsInputs();
+
+    // NOTE: Assume every linalg.generic is proper.
+    Value a = inputs[0];
+    Value b = inputs[1];
+
+    auto aT = dyn_cast_or_null<RankedTensorType>(a.getType());
+    auto bT = dyn_cast_or_null<RankedTensorType>(b.getType());
+
+    if (!aT || !bT)
       return failure();
 
-    auto encoding = dyn_cast_or_null<sparse_tensor::SparseTensorEncodingAttr>(
-        tensorT.getEncoding());
-    if (!encoding)
+    auto aEnc = dyn_cast_or_null<SparseTensorEncodingAttr>(aT.getEncoding());
+    if (!aEnc)
       return failure();
 
-    auto dim2lvl = encoding.getDimToLvl();
+    auto dim2lvl = aEnc.getDimToLvl();
     if (sparse_tensor::isBlockSparsity(dim2lvl)) {
       if (!isMatmul(op))
         return failure();
+
+      auto loc = op.getLoc();
+
+      Value pos = sparse_tensor::ToPositionsOp::create(rewriter, loc, a, 1);
+      Value crd = sparse_tensor::ToCoordinatesOp::create(rewriter, loc, a, 1);
+      Value val = sparse_tensor::ToValuesOp::create(rewriter, loc, a);
+
+      Value zero = arith::ConstantIndexOp::create(rewriter, loc, 0);
+      Value one = arith::ConstantIndexOp::create(rewriter, loc, 1);
+
+      // scf::ForOp::create(rewriter, op.getLoc());
 
       auto blockSizes = *getBlockSizes(dim2lvl);
       for (auto size : blockSizes) {
@@ -99,17 +120,11 @@ struct LinalgGenericLowering : OpRewritePattern<linalg::GenericOp> {
                                   rewriter.getIndexAttr(size));
       }
 
-      auto inputs = op.getDpsInputs();
-      Value A = inputs[0];
-      Value B = inputs[1];
-      auto ATy = cast<RankedTensorType>(A.getType());
-      auto BTy = cast<RankedTensorType>(B.getType());
-
       auto acc = tensor::EmptyOp::create(rewriter, op.getLoc(),
-                                         {ATy.getDimSize(0), BTy.getDimSize(1)},
+                                         {aT.getDimSize(0), bT.getDimSize(1)},
                                          rewriter.getF32Type());
       Type result = op.getResult(0).getType();
-      rewriter.replaceOpWithNewOp<MmaOp>(op, result, A, B, acc.getResult());
+      rewriter.replaceOpWithNewOp<MmaOp>(op, result, a, b, acc.getResult());
       return success();
     }
 
