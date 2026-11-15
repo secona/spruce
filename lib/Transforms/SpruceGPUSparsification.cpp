@@ -1,14 +1,15 @@
 #include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/Linalg/IR/Linalg.h"
+#include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/Dialect/SparseTensor/IR/SparseTensor.h"
 #include "mlir/Dialect/Tensor/IR/Tensor.h"
-#include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/IR/PatternMatch.h"
 #include "mlir/Support/LLVM.h"
 #include "mlir/Transforms/GreedyPatternRewriteDriver.h"
 
 #include "spruce/IR/SpruceDialect.h"
+#include "spruce/Transforms/MmaUtils.h"
 #include "spruce/Transforms/Passes.h"
 
 namespace mlir::spruce {
@@ -86,11 +87,16 @@ struct LinalgGenericLowering : OpRewritePattern<linalg::GenericOp> {
     // NOTE: Assume every linalg.generic is proper.
     Value a = inputs[0];
     Value b = inputs[1];
+    Value c = op.getDpsInits()[0];
 
     auto aT = dyn_cast_or_null<RankedTensorType>(a.getType());
     auto bT = dyn_cast_or_null<RankedTensorType>(b.getType());
+    auto cT = dyn_cast_or_null<RankedTensorType>(c.getType());
 
-    if (!aT || !bT)
+    if (!aT || !bT || !cT)
+      return failure();
+
+    if (bT.getEncoding() || cT.getEncoding())
       return failure();
 
     auto aEnc = dyn_cast_or_null<SparseTensorEncodingAttr>(aT.getEncoding());
@@ -98,37 +104,83 @@ struct LinalgGenericLowering : OpRewritePattern<linalg::GenericOp> {
       return failure();
 
     auto dim2lvl = aEnc.getDimToLvl();
-    if (sparse_tensor::isBlockSparsity(dim2lvl)) {
-      if (!isMatmul(op))
-        return failure();
+    if (!sparse_tensor::isBlockSparsity(dim2lvl) || !isMatmul(op))
+      return failure();
 
-      auto loc = op.getLoc();
+    // TODO: Validate the BSR layout and scalar multiply-add body.
+    // For now, assume dense/compressed/dense/dense levels in block-row order.
+    auto blockSizes = getBlockSizes(dim2lvl);
+    if (!blockSizes)
+      return failure();
 
-      Value pos = sparse_tensor::ToPositionsOp::create(rewriter, loc, a, 1);
-      Value crd = sparse_tensor::ToCoordinatesOp::create(rewriter, loc, a, 1);
-      Value val = sparse_tensor::ToValuesOp::create(rewriter, loc, a);
+    int64_t blockM = (*blockSizes)[0];
+    int64_t blockK = (*blockSizes)[1];
+    auto [m, n, k] = getMNK(aT, bT);
 
-      Value zero = arith::ConstantIndexOp::create(rewriter, loc, 0);
-      Value one = arith::ConstantIndexOp::create(rewriter, loc, 1);
+    if (m % blockM != 0 || k % blockK != 0)
+      return failure();
 
-      // scf::ForOp::create(rewriter, op.getLoc());
-
-      auto blockSizes = *getBlockSizes(dim2lvl);
-      for (auto size : blockSizes) {
-        arith::ConstantOp::create(rewriter, op.getLoc(),
-                                  rewriter.getIndexType(),
-                                  rewriter.getIndexAttr(size));
-      }
-
-      auto acc = tensor::EmptyOp::create(rewriter, op.getLoc(),
-                                         {aT.getDimSize(0), bT.getDimSize(1)},
-                                         rewriter.getF32Type());
-      Type result = op.getResult(0).getType();
-      rewriter.replaceOpWithNewOp<MmaOp>(op, result, a, b, acc.getResult());
+    if (m == 0 || n == 0 || k == 0) {
+      rewriter.replaceOp(op, c);
       return success();
     }
 
-    return failure();
+    Location loc = op.getLoc();
+    Value result;
+
+    {
+      OpBuilder::InsertionGuard guard(rewriter);
+
+      Value numBlocks =
+          NumBlocksOp::create(rewriter, loc, rewriter.getIndexType(), a);
+
+      Value zero = arith::ConstantIndexOp::create(rewriter, loc, 0);
+      Value one = arith::ConstantIndexOp::create(rewriter, loc, 1);
+      Value blockRows = arith::ConstantIndexOp::create(rewriter, loc, blockM);
+      Value blockCols = arith::ConstantIndexOp::create(rewriter, loc, blockK);
+
+      auto aBlockType =
+          RankedTensorType::get({blockM, blockK}, aT.getElementType());
+      auto accType = RankedTensorType::get({blockM, n}, cT.getElementType());
+      SmallVector<OpFoldResult> accSizes{rewriter.getIndexAttr(blockM),
+                                         rewriter.getIndexAttr(n)};
+      SmallVector<OpFoldResult> rhsSizes{rewriter.getIndexAttr(blockK),
+                                         rewriter.getIndexAttr(n)};
+      SmallVector<OpFoldResult> strides{rewriter.getIndexAttr(1),
+                                        rewriter.getIndexAttr(1)};
+
+      // Visit stored blocks by ordinal, keeping their storage layout abstract.
+      auto blocks = scf::ForOp::create(rewriter, loc, zero, numBlocks, one,
+                                       ValueRange{c});
+      rewriter.setInsertionPointToStart(blocks.getBody());
+      Value p = blocks.getInductionVar();
+      auto coordinates =
+          BlockCoordinatesOp::create(rewriter, loc, rewriter.getIndexType(),
+                                     rewriter.getIndexType(), a, p);
+      Value rowOffset =
+          arith::MulIOp::create(rewriter, loc, coordinates.getRow(), blockRows);
+      SmallVector<OpFoldResult> accOffsets{rowOffset, rewriter.getIndexAttr(0)};
+      Value destination = blocks.getRegionIterArgs()[0];
+      Value acc = tensor::ExtractSliceOp::create(rewriter, loc, destination,
+                                                 accOffsets, accSizes, strides);
+
+      Value lhs = GetBlockOp::create(rewriter, loc, aBlockType, a, p);
+      Value rhsOffset =
+          arith::MulIOp::create(rewriter, loc, coordinates.getCol(), blockCols);
+      Value rhs = tensor::ExtractSliceOp::create(
+          rewriter, loc, b,
+          ArrayRef<OpFoldResult>{rhsOffset, rewriter.getIndexAttr(0)}, rhsSizes,
+          strides);
+      Value updated = MmaOp::create(rewriter, loc, accType, lhs, rhs, acc);
+
+      Value updatedDestination = tensor::InsertSliceOp::create(
+          rewriter, loc, updated, destination, accOffsets, accSizes, strides);
+      scf::YieldOp::create(rewriter, loc, updatedDestination);
+      result = blocks.getResult(0);
+    }
+
+    rewriter.replaceOp(op, result);
+    return success();
   }
 };
 

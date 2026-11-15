@@ -9,7 +9,8 @@ def SpruceGPUSparsification : Pass<"spruce-gpu-sparsification", "::mlir::func::F
     "::mlir::arith::ArithDialect",
     "::mlir::tensor::TensorDialect",
     "::mlir::spruce::SpruceDialect",
-    "::mlir::scf::SCFDialect"
+    "::mlir::scf::SCFDialect",
+    "::mlir::sparse_tensor::SparseTensorDialect"
   ];
 }
 
