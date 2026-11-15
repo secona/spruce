@@ -35,4 +35,18 @@ def Spruce_MmaOp : Spruce_Op<"mma"> {
   let hasVerifier = 1;
 }
 
+def Spruce_GetBlockOp : Spruce_Op<"get_block"> {
+  let arguments = (ins
+    AnyRankedTensor:$tensor,
+    Index:$blockIndex);
+
+  let results = (outs
+    AnyRankedTensor:$result);
+
+  let assemblyFormat = [{
+    $tensor `[` $blockIndex `]` attr-dict
+    `:` type($tensor) `->` type($result)
+  }];
+}
+
 #endif
