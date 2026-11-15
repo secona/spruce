@@ -17,6 +17,7 @@ void buildPipeline(OpPassManager &pipeline) {
   functions.addPass(createSpruceGPUSparsification());
   functions.addPass(createSpruceTileMma());
   functions.addPass(createSpruceMmaToVector());
+  functions.addPass(createSpruceLowerBlockOps());
   functions.addPass(createCanonicalizerPass());
   functions.addPass(createCSEPass());
 }

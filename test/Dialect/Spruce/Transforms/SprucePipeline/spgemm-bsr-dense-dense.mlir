@@ -1,9 +1,9 @@
-// RUN: spruce-opt -spruce-pipeline -verify-roundtrip %s | FileCheck %s --implicit-check-not=linalg.generic --implicit-check-not=spruce.mma --implicit-check-not=tensor.pad
+// RUN: spruce-opt -spruce-pipeline -verify-roundtrip %s | FileCheck %s --implicit-check-not=linalg.generic --implicit-check-not=spruce.mma --implicit-check-not=spruce.num_blocks --implicit-check-not=tensor.pad
 
 // Main lowering progress checkpoint. Keep the input aligned with the
 // SpruceGPUSparsification test: M=32, N=8, K=16 and 16x8 storage blocks.
-// Current output: SCF and vector contractions, with sparse block access still
-// represented by spruce.num_blocks, spruce.block_coordinates, and spruce.get_block.
+// Current output: SCF and vector contractions, with the block count lowered to
+// a positions-buffer load. Block coordinates and contents still use Spruce ops.
 
 // CHECK-DAG: #[[TRANSPOSE:.*]] = affine_map<(d0, d1) -> (d1, d0)>
 // CHECK-DAG: #[[LHS_MAP:.*]] = affine_map<(d0, d1, d2) -> (d0, d2)>
@@ -24,13 +24,15 @@
 // CHECK-SAME:      %[[B:[^:]+]]: tensor<16x8xf32>) -> tensor<32x8xf32>
 // CHECK-DAG:     %[[C0:.*]] = arith.constant 0 : index
 // CHECK-DAG:     %[[C1:.*]] = arith.constant 1 : index
+// CHECK-DAG:     %[[C2:.*]] = arith.constant 2 : index
 // CHECK-DAG:     %[[C8:.*]] = arith.constant 8 : index
 // CHECK-DAG:     %[[C16:.*]] = arith.constant 16 : index
 // CHECK-DAG:     %[[ZERO:.*]] = arith.constant 0.000000e+00 : f32
 
 // CHECK:         %[[EMPTY:.*]] = tensor.empty() : tensor<32x8xf32>
 // CHECK:         %[[C:.*]] = linalg.fill ins(%[[ZERO]] : f32) outs(%[[EMPTY]] : tensor<32x8xf32>) -> tensor<32x8xf32>
-// CHECK:         %[[N_BLOCKS:.*]] = spruce.num_blocks %[[A]] : tensor<32x16xf32, #[[BSR]]>
+// CHECK:         %[[POS:.*]] = sparse_tensor.positions %[[A]] level = 1 : tensor<32x16xf32, #[[BSR]]> to memref<?xindex>
+// CHECK:         %[[N_BLOCKS:.*]] = memref.load %[[POS]][%[[C2]]] : memref<?xindex>
 // CHECK:         %[[RESULT:.*]] = scf.for %[[I:.*]] = %[[C0]] to %[[N_BLOCKS]] step %[[C1]] iter_args(%[[ACC:.*]] = %[[C]]) -> (tensor<32x8xf32>) {
 // CHECK:           %[[ROW_IDX:.*]], %[[COL_IDX:.*]] = spruce.block_coordinates %[[A]][%[[I]]] : tensor<32x16xf32, #[[BSR]]>
 // CHECK:           %[[ROW_OFFSET:.*]] = arith.muli %[[ROW_IDX]], %[[C16]] : index
