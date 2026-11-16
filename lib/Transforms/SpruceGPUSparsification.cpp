@@ -134,6 +134,21 @@ struct LinalgGenericLowering : OpRewritePattern<linalg::GenericOp> {
       Value numBlocks =
           NumBlocksOp::create(rewriter, loc, rewriter.getIndexType(), a);
 
+      auto kernel = KernelOp::create(rewriter, loc, TypeRange{cT},
+                                     ValueRange{a, b, c, numBlocks});
+
+      // Retain the target attribute from SpruceSelectTarget.
+      if (Attribute target = op->getAttr("spruce.target"))
+        kernel->setAttr("spruce.target", target);
+
+      Block *body = rewriter.createBlock(
+          &kernel.getBody(), {}, kernel->getOperandTypes(),
+          SmallVector<Location>(kernel.getNumOperands(), loc));
+      a = body->getArgument(0);
+      b = body->getArgument(1);
+      c = body->getArgument(2);
+      numBlocks = body->getArgument(3);
+
       Value zero = arith::ConstantIndexOp::create(rewriter, loc, 0);
       Value one = arith::ConstantIndexOp::create(rewriter, loc, 1);
       Value blockRows = arith::ConstantIndexOp::create(rewriter, loc, blockM);
@@ -176,7 +191,10 @@ struct LinalgGenericLowering : OpRewritePattern<linalg::GenericOp> {
       Value updatedDestination = tensor::InsertSliceOp::create(
           rewriter, loc, updated, destination, accOffsets, accSizes, strides);
       scf::YieldOp::create(rewriter, loc, updatedDestination);
-      result = blocks.getResult(0);
+
+      rewriter.setInsertionPointAfter(blocks);
+      spruce::YieldOp::create(rewriter, loc, blocks.getResults());
+      result = kernel.getResult(0);
     }
 
     rewriter.replaceOp(op, result);
