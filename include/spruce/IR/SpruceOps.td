@@ -7,6 +7,39 @@ include "mlir/IR/OpBase.td"
 class Spruce_Op<string mnemonic, list<Trait> traits = []>
     : Op<Spruce_Dialect, mnemonic, traits>;
 
+def Spruce_KernelOp : Spruce_Op<"kernel", [
+  IsolatedFromAbove,
+  SingleBlock
+]> {
+  let arguments = (ins
+    Variadic<AnyType>:$inputs);
+
+  let results = (outs
+    Variadic<AnyType>:$results);
+
+  let regions = (region
+    SizedRegion<1>:$body);
+
+  let assemblyFormat = [{
+    `(` $inputs `)` (`:` `(` type($inputs)^ `)`)?
+    $body (`->` `(` type($results)^ `)`)? attr-dict
+  }];
+
+  let hasVerifier = 1;
+}
+
+def Spruce_YieldOp : Spruce_Op<"yield", [
+  Terminator,
+  HasParent<"KernelOp">
+]> {
+  let arguments = (ins
+    Variadic<AnyType>:$values);
+
+  let assemblyFormat = [{
+    attr-dict ($values^ `:` type($values))?
+  }];
+}
+
 def Spruce_MmaOp : Spruce_Op<"mma"> {
   let arguments = (ins
     AnyRankedTensor:$lhs,

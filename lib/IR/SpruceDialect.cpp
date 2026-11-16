@@ -23,6 +23,36 @@ void SpruceDialect::initialize() {
 }
 
 // -----------------------------------------------------------------------------
+// KernelOp
+// -----------------------------------------------------------------------------
+
+LogicalResult KernelOp::verify() {
+  Block &body = getBody().front();
+  if (body.getNumArguments() != getNumOperands())
+    return emitOpError("expected one body argument per operand");
+
+  for (unsigned i = 0, e = getNumOperands(); i < e; ++i) {
+    if (body.getArgument(i).getType() != getOperand(i).getType())
+      return emitOpError("expected body argument ")
+             << i << " to have the same type as operand " << i;
+  }
+
+  auto yield = dyn_cast<YieldOp>(&body.back());
+  if (!yield)
+    return emitOpError("expected body to terminate with spruce.yield");
+  if (yield.getNumOperands() != getNumResults())
+    return emitOpError("expected one yielded value per result");
+
+  for (unsigned i = 0, e = getNumResults(); i < e; ++i) {
+    if (yield.getOperand(i).getType() != getResult(i).getType())
+      return emitOpError("expected yield operand ")
+             << i << " to have the same type as result " << i;
+  }
+
+  return success();
+}
+
+// -----------------------------------------------------------------------------
 // MmaOp
 // -----------------------------------------------------------------------------
 
