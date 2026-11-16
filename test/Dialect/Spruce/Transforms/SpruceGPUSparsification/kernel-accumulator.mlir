@@ -1,5 +1,6 @@
-// RUN: spruce-opt -spruce-gpu-sparsification -verify-roundtrip %s | FileCheck %s --implicit-check-not=linalg.generic --implicit-check-not=linalg.fill --implicit-check-not=tensor.empty --implicit-check-not=spruce.target
+// RUN: spruce-opt -spruce-gpu-sparsification -verify-roundtrip %s | FileCheck %s --implicit-check-not=linalg.generic --implicit-check-not=linalg.fill --implicit-check-not=tensor.empty
 
+// CHECK-DAG: #[[TARGET:.*]] = #spruce.target<{m = 16, n = 8, k = 8}>
 // CHECK-DAG: #[[BSR:.*]] = #sparse_tensor.encoding
 #BSR = #sparse_tensor.encoding<{
   map = (d0, d1) -> (
@@ -33,7 +34,7 @@
 // CHECK:             scf.yield %[[UPDATED]] : tensor<32x8xf32>
 // CHECK:           }
 // CHECK:           spruce.yield %[[LOOP_RESULT]] : tensor<32x8xf32>
-// CHECK:         } -> (tensor<32x8xf32>){{$}}
+// CHECK:         } -> (tensor<32x8xf32>) {spruce.target = #[[TARGET]]}
 // CHECK:         return %[[RESULT]] : tensor<32x8xf32>
 
 func.func @preserve_accumulator(%A: tensor<32x16xf32, #BSR>,

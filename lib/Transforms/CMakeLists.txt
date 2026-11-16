@@ -3,7 +3,6 @@ add_mlir_library(SpruceTransforms
   SpruceLowerBlockOps.cpp
   SpruceMmaToVector.cpp
   SprucePipeline.cpp
-  SpruceSelectTarget.cpp
   SpruceTileMma.cpp
 
   DEPENDS

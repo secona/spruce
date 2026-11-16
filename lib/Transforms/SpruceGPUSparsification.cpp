@@ -8,6 +8,7 @@
 #include "mlir/Support/LLVM.h"
 #include "mlir/Transforms/GreedyPatternRewriteDriver.h"
 
+#include "spruce/IR/SpruceAttributes.h"
 #include "spruce/IR/SpruceDialect.h"
 #include "spruce/Transforms/MmaUtils.h"
 #include "spruce/Transforms/Passes.h"
@@ -137,9 +138,8 @@ struct LinalgGenericLowering : OpRewritePattern<linalg::GenericOp> {
       auto kernel = KernelOp::create(rewriter, loc, TypeRange{cT},
                                      ValueRange{a, b, c, numBlocks});
 
-      // Retain the target attribute from SpruceSelectTarget.
-      if (Attribute target = op->getAttr("spruce.target"))
-        kernel->setAttr("spruce.target", target);
+      kernel->setAttr("spruce.target",
+                      TargetAttr::get(rewriter.getContext(), 16, 8, 8));
 
       Block *body = rewriter.createBlock(
           &kernel.getBody(), {}, kernel->getOperandTypes(),
