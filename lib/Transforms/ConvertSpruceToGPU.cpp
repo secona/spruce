@@ -68,6 +68,7 @@ struct ConvertSpruceToGPU : impl::ConvertSpruceToGPUBase<ConvertSpruceToGPU> {
       if (kernels.empty())
         continue;
 
+      // Rejects spruce.kernel operations that return values.
       for (KernelOp op : kernels) {
         if (op.getNumResults() != 0) {
           op.emitOpError("GPU entry functions must return void");
