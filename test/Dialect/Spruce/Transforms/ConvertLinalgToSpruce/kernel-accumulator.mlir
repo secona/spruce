@@ -1,4 +1,4 @@
-// RUN: spruce-opt -spruce-gpu-sparsification -verify-roundtrip %s | FileCheck %s --implicit-check-not=linalg.generic --implicit-check-not=linalg.fill --implicit-check-not=tensor.empty
+// RUN: spruce-opt -convert-linalg-to-spruce -verify-roundtrip %s | FileCheck %s --implicit-check-not=linalg.generic --implicit-check-not=linalg.fill --implicit-check-not=tensor.empty
 
 // CHECK-DAG: #[[TARGET:.*]] = #spruce.target<{m = 16, n = 8, k = 8}>
 // CHECK-DAG: #[[BSR:.*]] = #sparse_tensor.encoding
@@ -16,12 +16,10 @@
 // CHECK-SAME:      %[[B:[^:]+]]: tensor<16x8xf32>,
 // CHECK-SAME:      %[[C:[^:]+]]: tensor<32x8xf32>) -> tensor<32x8xf32> {
 // CHECK:         %[[N_BLOCKS:.*]] = spruce.num_blocks %[[A]] : tensor<32x16xf32, #[[BSR]]>
-// CHECK:         %[[RESULT:.*]] = spruce.kernel(%[[A]], %[[B]], %[[C]], %[[N_BLOCKS]])
-// CHECK-SAME:        : (tensor<32x16xf32, #[[BSR]]>, tensor<16x8xf32>, tensor<32x8xf32>, index) {
-// CHECK:         ^bb0(%[[K_A:[^:]+]]: tensor<32x16xf32, #[[BSR]]>,
-// CHECK-SAME:          %[[K_B:[^:]+]]: tensor<16x8xf32>,
-// CHECK-SAME:          %[[K_C:[^:]+]]: tensor<32x8xf32>,
-// CHECK-SAME:          %[[K_N_BLOCKS:[^:]+]]: index):
+// CHECK:         %[[RESULT:.*]] = spruce.kernel(%[[K_A:[^ ]+]] = %[[A]] : tensor<32x16xf32, #[[BSR]]>,
+// CHECK-SAME:        %[[K_B:[^ ]+]] = %[[B]] : tensor<16x8xf32>,
+// CHECK-SAME:        %[[K_C:[^ ]+]] = %[[C]] : tensor<32x8xf32>,
+// CHECK-SAME:        %[[K_N_BLOCKS:[^ ]+]] = %[[N_BLOCKS]] : index) {
 // CHECK-DAG:       %[[C0:.*]] = arith.constant 0 : index
 // CHECK-DAG:       %[[C1:.*]] = arith.constant 1 : index
 // CHECK:           %[[LOOP_RESULT:.*]] = scf.for %[[P:.*]] = %[[C0]] to %[[K_N_BLOCKS]] step %[[C1]] iter_args(%[[ACC:.*]] = %[[K_C]]) -> (tensor<32x8xf32>) {

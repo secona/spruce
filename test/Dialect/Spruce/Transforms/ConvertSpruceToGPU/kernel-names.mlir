@@ -14,13 +14,13 @@
 // CHECK:         return
 // CHECK-LABEL: gpu.module @spmv_gpu {
 // CHECK-LABEL: gpu.func @spmv_kernel0(
-// CHECK-SAME:      %[[K_N:[^:]+]]: index) kernel {
-// CHECK:         gpu.printf "spmv %llu", %[[K_N]] : index
+// CHECK-SAME:      %[[N_D:[^:]+]]: index) kernel {
+// CHECK:         gpu.printf "spmv %llu", %[[N_D]] : index
 // CHECK:         gpu.return
 // CHECK-LABEL: func.func @spmv(
-// CHECK-SAME:      %[[N:[^:]+]]: index) {
+// CHECK-SAME:      %[[N_H:[^:]+]]: index) {
 // CHECK:         gpu.launch_func @spmv_gpu::@spmv_kernel0
-// CHECK-SAME:        args(%[[N]] : index)
+// CHECK-SAME:        args(%[[N_H]] : index)
 // CHECK:         return
 
 func.func @spgemm() {
@@ -35,10 +35,9 @@ func.func @spgemm() {
   return
 }
 
-func.func @spmv(%n: index) {
-  spruce.kernel(%n) : (index) {
-  ^bb0(%size: index):
-    gpu.printf "spmv %llu", %size : index
+func.func @spmv(%n_h: index) {
+  spruce.kernel(%n_d = %n_h : index) {
+    gpu.printf "spmv %llu", %n_d : index
     spruce.yield
   }
   return

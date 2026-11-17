@@ -21,12 +21,10 @@
 // CHECK:         %[[EMPTY:.*]] = tensor.empty() : tensor<32x8xf32>
 // CHECK:         %[[C:.*]] = linalg.fill ins(%[[ZERO]] : f32) outs(%[[EMPTY]] : tensor<32x8xf32>) -> tensor<32x8xf32>
 // CHECK:         %[[N_BLOCKS:.*]] = spruce.num_blocks %[[A]] : tensor<32x16xf32, #[[BSR]]>
-// CHECK:         %[[RESULT:.*]] = spruce.kernel(%[[A]], %[[B]], %[[C]], %[[N_BLOCKS]])
-// CHECK-SAME:        : (tensor<32x16xf32, #[[BSR]]>, tensor<16x8xf32>, tensor<32x8xf32>, index) {
-// CHECK:         ^bb0(%[[K_A:[^:]+]]: tensor<32x16xf32, #[[BSR]]>,
-// CHECK-SAME:          %[[K_B:[^:]+]]: tensor<16x8xf32>,
-// CHECK-SAME:          %[[K_C:[^:]+]]: tensor<32x8xf32>,
-// CHECK-SAME:          %[[K_N_BLOCKS:[^:]+]]: index):
+// CHECK:         %[[RESULT:.*]] = spruce.kernel(%[[K_A:[^ ]+]] = %[[A]] : tensor<32x16xf32, #[[BSR]]>,
+// CHECK-SAME:        %[[K_B:[^ ]+]] = %[[B]] : tensor<16x8xf32>,
+// CHECK-SAME:        %[[K_C:[^ ]+]] = %[[C]] : tensor<32x8xf32>,
+// CHECK-SAME:        %[[K_N_BLOCKS:[^ ]+]] = %[[N_BLOCKS]] : index) {
 // CHECK-DAG:       %[[C0:.*]] = arith.constant 0 : index
 // CHECK-DAG:       %[[C1:.*]] = arith.constant 1 : index
 // CHECK-DAG:       %[[C8:.*]] = arith.constant 8 : index

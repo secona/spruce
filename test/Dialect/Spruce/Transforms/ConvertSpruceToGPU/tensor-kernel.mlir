@@ -18,32 +18,31 @@
 // CHECK:       module attributes {gpu.container_module} {
 // CHECK-LABEL: gpu.module @spgemm_gpu {
 // CHECK-LABEL: gpu.func @spgemm_kernel0(
-// CHECK-SAME:      %[[K_A:[^:]+]]: tensor<32x16xf32, #[[BSR]]>,
-// CHECK-SAME:      %[[K_B:[^:]+]]: tensor<8x8xf32>,
-// CHECK-SAME:      %[[K_C:[^:]+]]: tensor<16x8xf32>,
-// CHECK-SAME:      %[[K_P:[^:]+]]: index) kernel attributes {spruce.target = #[[TARGET]]} {
-// CHECK:         %[[BLOCK:.*]] = spruce.get_block %[[K_A]][%[[K_P]]] : tensor<32x16xf32, #[[BSR]]> -> tensor<16x8xf32>
-// CHECK:         %[[PRODUCT:.*]] = spruce.mma %[[BLOCK]], %[[K_B]], %[[K_C]] : tensor<16x8xf32>, tensor<8x8xf32>, tensor<16x8xf32> -> tensor<16x8xf32>
+// CHECK-SAME:      %[[A_D:[^:]+]]: tensor<32x16xf32, #[[BSR]]>,
+// CHECK-SAME:      %[[B_D:[^:]+]]: tensor<8x8xf32>,
+// CHECK-SAME:      %[[C_D:[^:]+]]: tensor<16x8xf32>,
+// CHECK-SAME:      %[[P_D:[^:]+]]: index) kernel attributes {spruce.target = #[[TARGET]]} {
+// CHECK:         %[[BLOCK:.*]] = spruce.get_block %[[A_D]][%[[P_D]]] : tensor<32x16xf32, #[[BSR]]> -> tensor<16x8xf32>
+// CHECK:         %[[PRODUCT:.*]] = spruce.mma %[[BLOCK]], %[[B_D]], %[[C_D]] : tensor<16x8xf32>, tensor<8x8xf32>, tensor<16x8xf32> -> tensor<16x8xf32>
 // CHECK:         gpu.return
 // CHECK-LABEL: func.func @spgemm(
-// CHECK-SAME:      %[[A:[^:]+]]: tensor<32x16xf32, #[[BSR]]>,
-// CHECK-SAME:      %[[B:[^:]+]]: tensor<8x8xf32>,
-// CHECK-SAME:      %[[C:[^:]+]]: tensor<16x8xf32>,
-// CHECK-SAME:      %[[P:[^:]+]]: index) {
+// CHECK-SAME:      %[[A_H:[^:]+]]: tensor<32x16xf32, #[[BSR]]>,
+// CHECK-SAME:      %[[B_H:[^:]+]]: tensor<8x8xf32>,
+// CHECK-SAME:      %[[C_H:[^:]+]]: tensor<16x8xf32>,
+// CHECK-SAME:      %[[P_H:[^:]+]]: index) {
 // CHECK:         %[[C1:.*]] = arith.constant 1 : index
 // CHECK:         gpu.launch_func @spgemm_gpu::@spgemm_kernel0
 // CHECK-SAME:        blocks in (%[[C1]], %[[C1]], %[[C1]]) threads in (%[[C1]], %[[C1]], %[[C1]])
-// CHECK-SAME:        args(%[[A]] : tensor<32x16xf32, #[[BSR]]>, %[[B]] : tensor<8x8xf32>, %[[C]] : tensor<16x8xf32>, %[[P]] : index)
+// CHECK-SAME:        args(%[[A_H]] : tensor<32x16xf32, #[[BSR]]>, %[[B_H]] : tensor<8x8xf32>, %[[C_H]] : tensor<16x8xf32>, %[[P_H]] : index)
 // CHECK:         return
 
-func.func @spgemm(%A: tensor<32x16xf32, #BSR>,
-                  %B: tensor<8x8xf32>,
-                  %C: tensor<16x8xf32>,
-                  %p: index) {
-  spruce.kernel(%A, %B, %C, %p) : (tensor<32x16xf32, #BSR>, tensor<8x8xf32>, tensor<16x8xf32>, index) {
-  ^bb0(%a: tensor<32x16xf32, #BSR>, %b: tensor<8x8xf32>, %c: tensor<16x8xf32>, %i: index):
-    %block = spruce.get_block %a[%i] : tensor<32x16xf32, #BSR> -> tensor<16x8xf32>
-    %product = spruce.mma %block, %b, %c : tensor<16x8xf32>, tensor<8x8xf32>, tensor<16x8xf32> -> tensor<16x8xf32>
+func.func @spgemm(%A_h: tensor<32x16xf32, #BSR>,
+                  %B_h: tensor<8x8xf32>,
+                  %C_h: tensor<16x8xf32>,
+                  %p_h: index) {
+  spruce.kernel(%A_d = %A_h : tensor<32x16xf32, #BSR>, %B_d = %B_h : tensor<8x8xf32>, %C_d = %C_h : tensor<16x8xf32>, %p_d = %p_h : index) {
+    %block = spruce.get_block %A_d[%p_d] : tensor<32x16xf32, #BSR> -> tensor<16x8xf32>
+    %product = spruce.mma %block, %B_d, %C_d : tensor<16x8xf32>, tensor<8x8xf32>, tensor<16x8xf32> -> tensor<16x8xf32>
     spruce.yield
   } {spruce.target = #TARGET}
   return

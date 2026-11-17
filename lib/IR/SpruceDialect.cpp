@@ -1,7 +1,47 @@
 #include "spruce/IR/SpruceDialect.h"
 #include "spruce/IR/SpruceAttributes.h"
 
+#include "mlir/IR/OpImplementation.h"
+#include "llvm/ADT/STLExtras.h"
+
 #include "spruce/IR/SpruceDialect.cpp.inc"
+
+namespace mlir::spruce {
+
+static ParseResult
+parseKernelBody(OpAsmParser &parser,
+                SmallVectorImpl<OpAsmParser::UnresolvedOperand> &inputs,
+                SmallVectorImpl<Type> &types, Region &body) {
+  SmallVector<OpAsmParser::Argument> arguments;
+  auto parseInput = [&]() -> ParseResult {
+    auto &argument = arguments.emplace_back();
+    if (parser.parseArgument(argument) || parser.parseEqual() ||
+        parser.parseOperand(inputs.emplace_back()) ||
+        parser.parseColonType(types.emplace_back()))
+      return failure();
+    argument.type = types.back();
+    return success();
+  };
+  if (parser.parseCommaSeparatedList(OpAsmParser::Delimiter::Paren, parseInput))
+    return failure();
+  return parser.parseRegion(body, arguments, /*enableNameShadowing=*/true);
+}
+
+static void printKernelBody(OpAsmPrinter &printer, Operation *,
+                            OperandRange inputs, TypeRange types,
+                            Region &body) {
+  printer << "(";
+  llvm::interleaveComma(llvm::zip_equal(body.getArguments(), inputs, types),
+                        printer, [&](const auto &input) {
+                          auto [argument, value, type] = input;
+                          printer << argument << " = " << value << " : "
+                                  << type;
+                        });
+  printer << ") ";
+  printer.printRegion(body, /*printEntryBlockArgs=*/false);
+}
+
+} // namespace mlir::spruce
 
 #define GET_OP_CLASSES
 #include "spruce/IR/SpruceOps.cpp.inc"

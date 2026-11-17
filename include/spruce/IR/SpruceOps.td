@@ -21,8 +21,8 @@ def Spruce_KernelOp : Spruce_Op<"kernel", [
     SizedRegion<1>:$body);
 
   let assemblyFormat = [{
-    `(` $inputs `)` (`:` `(` type($inputs)^ `)`)?
-    $body (`->` `(` type($results)^ `)`)? attr-dict
+    `` custom<KernelBody>($inputs, type($inputs), $body)
+    (`->` `(` type($results)^ `)`)? attr-dict
   }];
 
   let hasVerifier = 1;

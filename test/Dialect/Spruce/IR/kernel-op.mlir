@@ -1,26 +1,23 @@
-// RUN: spruce-opt -verify-roundtrip -split-input-file %s | FileCheck %s
+// RUN: spruce-opt -verify-roundtrip -split-input-file %s | FileCheck %s --implicit-check-not=^bb0
 
 // CHECK-LABEL: func.func @kernel_mma(
-// CHECK-SAME:      %[[LHS:[^:]+]]: tensor<16x8xf32>,
-// CHECK-SAME:      %[[RHS:[^:]+]]: tensor<8x8xf32>,
-// CHECK-SAME:      %[[ACC:[^:]+]]: tensor<16x8xf32>) -> tensor<16x8xf32> {
-// CHECK:         %[[RESULT:.*]] = spruce.kernel(%[[LHS]], %[[RHS]], %[[ACC]])
-// CHECK-SAME:        : (tensor<16x8xf32>, tensor<8x8xf32>, tensor<16x8xf32>) {
-// CHECK:         ^bb0(%[[A:[^:]+]]: tensor<16x8xf32>,
-// CHECK-SAME:          %[[B:[^:]+]]: tensor<8x8xf32>,
-// CHECK-SAME:          %[[C:[^:]+]]: tensor<16x8xf32>):
-// CHECK:           %[[PRODUCT:.*]] = spruce.mma %[[A]], %[[B]], %[[C]] : tensor<16x8xf32>, tensor<8x8xf32>, tensor<16x8xf32> -> tensor<16x8xf32>
-// CHECK:           spruce.yield %[[PRODUCT]] : tensor<16x8xf32>
+// CHECK-SAME:      %[[A_H:[^:]+]]: tensor<16x8xf32>,
+// CHECK-SAME:      %[[B_H:[^:]+]]: tensor<8x8xf32>,
+// CHECK-SAME:      %[[C_H:[^:]+]]: tensor<16x8xf32>) -> tensor<16x8xf32> {
+// CHECK:         %[[RESULT_H:.*]] = spruce.kernel(%[[A_D:[^ ]+]] = %[[A_H]] : tensor<16x8xf32>,
+// CHECK-SAME:        %[[B_D:[^ ]+]] = %[[B_H]] : tensor<8x8xf32>,
+// CHECK-SAME:        %[[C_D:[^ ]+]] = %[[C_H]] : tensor<16x8xf32>) {
+// CHECK:           %[[PRODUCT_D:.*]] = spruce.mma %[[A_D]], %[[B_D]], %[[C_D]] : tensor<16x8xf32>, tensor<8x8xf32>, tensor<16x8xf32> -> tensor<16x8xf32>
+// CHECK:           spruce.yield %[[PRODUCT_D]] : tensor<16x8xf32>
 // CHECK:         } -> (tensor<16x8xf32>)
-// CHECK:         return %[[RESULT]] : tensor<16x8xf32>
+// CHECK:         return %[[RESULT_H]] : tensor<16x8xf32>
 
-func.func @kernel_mma(%lhs: tensor<16x8xf32>, %rhs: tensor<8x8xf32>, %acc: tensor<16x8xf32>) -> tensor<16x8xf32> {
-  %result = spruce.kernel(%lhs, %rhs, %acc) : (tensor<16x8xf32>, tensor<8x8xf32>, tensor<16x8xf32>) {
-  ^bb0(%a: tensor<16x8xf32>, %b: tensor<8x8xf32>, %c: tensor<16x8xf32>):
-    %product = spruce.mma %a, %b, %c : tensor<16x8xf32>, tensor<8x8xf32>, tensor<16x8xf32> -> tensor<16x8xf32>
-    spruce.yield %product : tensor<16x8xf32>
+func.func @kernel_mma(%A_h: tensor<16x8xf32>, %B_h: tensor<8x8xf32>, %C_h: tensor<16x8xf32>) -> tensor<16x8xf32> {
+  %result_h = spruce.kernel(%A_d = %A_h : tensor<16x8xf32>, %B_d = %B_h : tensor<8x8xf32>, %C_d = %C_h : tensor<16x8xf32>) {
+    %product_d = spruce.mma %A_d, %B_d, %C_d : tensor<16x8xf32>, tensor<8x8xf32>, tensor<16x8xf32> -> tensor<16x8xf32>
+    spruce.yield %product_d : tensor<16x8xf32>
   } -> (tensor<16x8xf32>)
-  return %result : tensor<16x8xf32>
+  return %result_h : tensor<16x8xf32>
 }
 
 // -----
@@ -36,50 +33,46 @@ func.func @kernel_mma(%lhs: tensor<16x8xf32>, %rhs: tensor<8x8xf32>, %acc: tenso
 }>
 
 // CHECK-LABEL: func.func @kernel_sparse(
-// CHECK-SAME:      %[[T:[^:]+]]: tensor<32x16xf32, #[[BSR]]>,
-// CHECK-SAME:      %[[P:[^:]+]]: index) -> (tensor<16x8xf32>, index, index) {
-// CHECK:         %[[RESULT:.*]]:3 = spruce.kernel(%[[T]], %[[P]]) : (tensor<32x16xf32, #[[BSR]]>, index) {
-// CHECK:         ^bb0(%[[A:[^:]+]]: tensor<32x16xf32, #[[BSR]]>, %[[I:[^:]+]]: index):
-// CHECK:           %[[VALUES:.*]] = spruce.get_block %[[A]][%[[I]]] : tensor<32x16xf32, #[[BSR]]> -> tensor<16x8xf32>
-// CHECK:           %[[R:.*]], %[[C:.*]] = spruce.block_coordinates %[[A]][%[[I]]] : tensor<32x16xf32, #[[BSR]]>
-// CHECK:           spruce.yield %[[VALUES]], %[[R]], %[[C]] : tensor<16x8xf32>, index, index
+// CHECK-SAME:      %[[A_H:[^:]+]]: tensor<32x16xf32, #[[BSR]]>,
+// CHECK-SAME:      %[[P_H:[^:]+]]: index) -> (tensor<16x8xf32>, index, index) {
+// CHECK:         %[[RESULT_H:.*]]:3 = spruce.kernel(%[[A_D:[^ ]+]] = %[[A_H]] : tensor<32x16xf32, #[[BSR]]>, %[[P_D:[^ ]+]] = %[[P_H]] : index) {
+// CHECK:           %[[BLOCK_D:.*]] = spruce.get_block %[[A_D]][%[[P_D]]] : tensor<32x16xf32, #[[BSR]]> -> tensor<16x8xf32>
+// CHECK:           %[[ROW_D:.*]], %[[COL_D:.*]] = spruce.block_coordinates %[[A_D]][%[[P_D]]] : tensor<32x16xf32, #[[BSR]]>
+// CHECK:           spruce.yield %[[BLOCK_D]], %[[ROW_D]], %[[COL_D]] : tensor<16x8xf32>, index, index
 // CHECK:         } -> (tensor<16x8xf32>, index, index)
-// CHECK:         return %[[RESULT]]#0, %[[RESULT]]#1, %[[RESULT]]#2 : tensor<16x8xf32>, index, index
+// CHECK:         return %[[RESULT_H]]#0, %[[RESULT_H]]#1, %[[RESULT_H]]#2 : tensor<16x8xf32>, index, index
 
-func.func @kernel_sparse(%T: tensor<32x16xf32, #BSR>, %p: index) -> (tensor<16x8xf32>, index, index) {
-  %block, %row, %col = spruce.kernel(%T, %p) : (tensor<32x16xf32, #BSR>, index) {
-  ^bb0(%a: tensor<32x16xf32, #BSR>, %i: index):
-    %values = spruce.get_block %a[%i] : tensor<32x16xf32, #BSR> -> tensor<16x8xf32>
-    %r, %c = spruce.block_coordinates %a[%i] : tensor<32x16xf32, #BSR>
-    spruce.yield %values, %r, %c : tensor<16x8xf32>, index, index
+func.func @kernel_sparse(%A_h: tensor<32x16xf32, #BSR>, %p_h: index) -> (tensor<16x8xf32>, index, index) {
+  %block_h, %row_h, %col_h = spruce.kernel(%A_d = %A_h : tensor<32x16xf32, #BSR>, %p_d = %p_h : index) {
+    %block_d = spruce.get_block %A_d[%p_d] : tensor<32x16xf32, #BSR> -> tensor<16x8xf32>
+    %row_d, %col_d = spruce.block_coordinates %A_d[%p_d] : tensor<32x16xf32, #BSR>
+    spruce.yield %block_d, %row_d, %col_d : tensor<16x8xf32>, index, index
   } -> (tensor<16x8xf32>, index, index)
-  return %block, %row, %col : tensor<16x8xf32>, index, index
+  return %block_h, %row_h, %col_h : tensor<16x8xf32>, index, index
 }
 
 // -----
 
 // CHECK-LABEL: func.func @kernel_buffers(
-// CHECK-SAME:      %[[BUFFER:[^:]+]]: memref<?xf32>,
-// CHECK-SAME:      %[[SIZE:[^:]+]]: index,
-// CHECK-SAME:      %[[VALUE:[^:]+]]: f32) {
-// CHECK:         spruce.kernel(%[[BUFFER]], %[[SIZE]], %[[VALUE]]) : (memref<?xf32>, index, f32) {
-// CHECK:         ^bb0(%[[B:[^:]+]]: memref<?xf32>, %[[N:[^:]+]]: index, %[[V:[^:]+]]: f32):
+// CHECK-SAME:      %[[BUFFER_H:[^:]+]]: memref<?xf32>,
+// CHECK-SAME:      %[[SIZE_H:[^:]+]]: index,
+// CHECK-SAME:      %[[VALUE_H:[^:]+]]: f32) {
+// CHECK:         spruce.kernel(%[[BUFFER_D:[^ ]+]] = %[[BUFFER_H]] : memref<?xf32>, %[[SIZE_D:[^ ]+]] = %[[SIZE_H]] : index, %[[VALUE_D:[^ ]+]] = %[[VALUE_H]] : f32) {
 // CHECK-DAG:       %[[C0:.*]] = arith.constant 0 : index
 // CHECK-DAG:       %[[C1:.*]] = arith.constant 1 : index
-// CHECK:           scf.for %[[I:.*]] = %[[C0]] to %[[N]] step %[[C1]] {
-// CHECK:             memref.store %[[V]], %[[B]][%[[I]]] : memref<?xf32>
+// CHECK:           scf.for %[[I:.*]] = %[[C0]] to %[[SIZE_D]] step %[[C1]] {
+// CHECK:             memref.store %[[VALUE_D]], %[[BUFFER_D]][%[[I]]] : memref<?xf32>
 // CHECK:           }
 // CHECK:           spruce.yield
 // CHECK:         }{{$}}
 // CHECK:         return
 
-func.func @kernel_buffers(%buffer: memref<?xf32>, %size: index, %value: f32) {
-  spruce.kernel(%buffer, %size, %value) : (memref<?xf32>, index, f32) {
-  ^bb0(%b: memref<?xf32>, %n: index, %v: f32):
+func.func @kernel_buffers(%buffer_h: memref<?xf32>, %size_h: index, %value_h: f32) {
+  spruce.kernel(%buffer_d = %buffer_h : memref<?xf32>, %size_d = %size_h : index, %value_d = %value_h : f32) {
     %c0 = arith.constant 0 : index
     %c1 = arith.constant 1 : index
-    scf.for %i = %c0 to %n step %c1 {
-      memref.store %v, %b[%i] : memref<?xf32>
+    scf.for %i = %c0 to %size_d step %c1 {
+      memref.store %value_d, %buffer_d[%i] : memref<?xf32>
     }
     spruce.yield
   }
@@ -89,18 +82,18 @@ func.func @kernel_buffers(%buffer: memref<?xf32>, %size: index, %value: f32) {
 // -----
 
 // CHECK-LABEL: func.func @kernel_no_inputs(
-// CHECK:         %[[RESULT:.*]] = spruce.kernel() {
-// CHECK:           %[[C1:.*]] = arith.constant 1 : index
-// CHECK:           spruce.yield %[[C1]] : index
+// CHECK:         %[[RESULT_H:.*]] = spruce.kernel() {
+// CHECK:           %[[C1_D:.*]] = arith.constant 1 : index
+// CHECK:           spruce.yield %[[C1_D]] : index
 // CHECK:         } -> (index)
-// CHECK:         return %[[RESULT]] : index
+// CHECK:         return %[[RESULT_H]] : index
 
 func.func @kernel_no_inputs() -> index {
-  %result = spruce.kernel() {
-    %c1 = arith.constant 1 : index
-    spruce.yield %c1 : index
+  %result_h = spruce.kernel() {
+    %c1_d = arith.constant 1 : index
+    spruce.yield %c1_d : index
   } -> (index)
-  return %result : index
+  return %result_h : index
 }
 
 // -----
