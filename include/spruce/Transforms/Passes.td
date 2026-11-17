@@ -18,6 +18,16 @@ def SpruceGPUSparsification : Pass<"spruce-gpu-sparsification", "::mlir::func::F
   ];
 }
 
+def SpruceMapToGPU : Pass<"spruce-map-to-gpu", "::mlir::ModuleOp"> {
+  let summary = "spruce-map-to-gpu";
+  let dependentDialects = [
+    "::mlir::arith::ArithDialect",
+    "::mlir::func::FuncDialect",
+    "::mlir::gpu::GPUDialect",
+    "::mlir::spruce::SpruceDialect"
+  ];
+}
+
 def SpruceLowerBlockOps : Pass<"spruce-lower-block-ops", "::mlir::func::FuncOp"> {
   let summary = "spruce-lower-block-ops";
   let dependentDialects = [
