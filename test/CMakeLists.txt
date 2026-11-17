@@ -29,8 +29,8 @@ list(FILTER SPRUCE_MLIR_TESTS EXCLUDE REGEX "(^|/)Inputs/")
 
 # Keep future sparsification examples as reference inputs, not active tests.
 list(REMOVE_ITEM SPRUCE_MLIR_TESTS
-  "Dialect/Spruce/Transforms/LinalgToSpruce/spgemm.mlir"
-  "Dialect/Spruce/Transforms/LinalgToSpruce/spmv.mlir"
+  "Dialect/Spruce/Transforms/ConvertLinalgToSpruce/spgemm.mlir"
+  "Dialect/Spruce/Transforms/ConvertLinalgToSpruce/spmv.mlir"
 )
 
 # Build-tree paths select the generated lit site configuration.

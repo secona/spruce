@@ -1,4 +1,4 @@
-// RUN: spruce-opt -convert-linalg-to-spruce -verify-roundtrip %s | FileCheck %s --implicit-check-not=linalg.generic --implicit-check-not=linalg.fill --implicit-check-not=tensor.empty
+// RUN: spruce-opt -spruce-gpu-sparsification -verify-roundtrip %s | FileCheck %s --implicit-check-not=linalg.generic --implicit-check-not=linalg.fill --implicit-check-not=tensor.empty
 
 // CHECK-DAG: #[[TARGET:.*]] = #spruce.target<{m = 16, n = 8, k = 8}>
 // CHECK-DAG: #[[BSR:.*]] = #sparse_tensor.encoding
