@@ -1,4 +1,4 @@
-// RUN: spruce-opt -spruce-mma-to-vector -split-input-file -verify-diagnostics %s
+// RUN: spruce-opt -convert-spruce-to-vector -split-input-file -verify-diagnostics %s
 
 func.func @unsupported_inputs(%lhs: tensor<16x8xf16>, %rhs: tensor<8x8xf16>, %acc: tensor<16x8xf32>) -> tensor<16x8xf32> {
   // expected-error@+1 {{failed to legalize operation 'spruce.mma' that was explicitly marked illegal}}

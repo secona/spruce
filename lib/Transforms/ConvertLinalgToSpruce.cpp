@@ -14,7 +14,7 @@
 #include "spruce/Transforms/Passes.h"
 
 namespace mlir::spruce {
-#define GEN_PASS_DEF_SPRUCEGPUSPARSIFICATION
+#define GEN_PASS_DEF_CONVERTLINALGTOSPRUCE
 #include "spruce/Transforms/Passes.h.inc"
 
 namespace {
@@ -202,8 +202,8 @@ struct LinalgGenericLowering : OpRewritePattern<linalg::GenericOp> {
   }
 };
 
-struct SpruceGPUSparsification
-    : impl::SpruceGPUSparsificationBase<SpruceGPUSparsification> {
+struct ConvertLinalgToSpruce
+    : impl::ConvertLinalgToSpruceBase<ConvertLinalgToSpruce> {
   using Base::Base;
 
   void runOnOperation() override {

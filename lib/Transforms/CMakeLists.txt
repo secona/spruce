@@ -1,8 +1,8 @@
 add_mlir_library(SpruceTransforms
-  SpruceGPUSparsification.cpp
+  ConvertLinalgToSpruce.cpp
+  ConvertSpruceToGPU.cpp
+  ConvertSpruceToVector.cpp
   SpruceLowerBlockOps.cpp
-  SpruceMapToGPU.cpp
-  SpruceMmaToVector.cpp
   SprucePipeline.cpp
   SpruceTileMma.cpp
 

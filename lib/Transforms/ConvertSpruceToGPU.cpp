@@ -10,7 +10,7 @@
 #include <string>
 
 namespace mlir::spruce {
-#define GEN_PASS_DEF_SPRUCEMAPTOGPU
+#define GEN_PASS_DEF_CONVERTSPRUCETOGPU
 #include "spruce/Transforms/Passes.h.inc"
 
 namespace {
@@ -53,7 +53,7 @@ void outlineKernel(KernelOp op, gpu::GPUModuleOp gpuModule,
       op, function, dimensions, dimensions, Value(), op.getInputs());
 }
 
-struct SpruceMapToGPU : impl::SpruceMapToGPUBase<SpruceMapToGPU> {
+struct ConvertSpruceToGPU : impl::ConvertSpruceToGPUBase<ConvertSpruceToGPU> {
   using Base::Base;
 
   void runOnOperation() override {

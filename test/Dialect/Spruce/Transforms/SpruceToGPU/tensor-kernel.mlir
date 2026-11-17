@@ -1,4 +1,4 @@
-// RUN: spruce-opt -spruce-map-to-gpu -verify-roundtrip %s | FileCheck %s --implicit-check-not=spruce.kernel --implicit-check-not=spruce.yield --implicit-check-not=bufferization. --implicit-check-not='memref<' --implicit-check-not=gpu.alloc --implicit-check-not=gpu.memcpy
+// RUN: spruce-opt -convert-spruce-to-gpu -verify-roundtrip %s | FileCheck %s --implicit-check-not=spruce.kernel --implicit-check-not=spruce.yield --implicit-check-not=bufferization. --implicit-check-not='memref<' --implicit-check-not=gpu.alloc --implicit-check-not=gpu.memcpy
 
 // This prototype outlines tensor IR without bufferization or execution mapping.
 // The outlined GPU entry function has no results and runs with one thread.

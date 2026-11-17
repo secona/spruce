@@ -10,7 +10,7 @@
 #include "spruce/Transforms/Passes.h"
 
 namespace mlir::spruce {
-#define GEN_PASS_DEF_SPRUCEMMATOVECTOR
+#define GEN_PASS_DEF_CONVERTSPRUCETOVECTOR
 #include "spruce/Transforms/Passes.h.inc"
 
 namespace {
@@ -73,7 +73,8 @@ struct MmaToVectorConversion : OpRewritePattern<MmaOp> {
   }
 };
 
-struct SpruceMmaToVector : impl::SpruceMmaToVectorBase<SpruceMmaToVector> {
+struct ConvertSpruceToVector
+    : impl::ConvertSpruceToVectorBase<ConvertSpruceToVector> {
   using Base::Base;
 
   void runOnOperation() override {

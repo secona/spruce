@@ -1,4 +1,4 @@
-// RUN: spruce-opt -split-input-file -spruce-gpu-sparsification -canonicalize -cse %s | FileCheck %s
+// RUN: spruce-opt -split-input-file -convert-linalg-to-spruce -canonicalize -cse %s | FileCheck %s
 
 // CHECK: #[[CSR:.*]] = #sparse_tensor.encoding
 #CSR = #sparse_tensor.encoding<{

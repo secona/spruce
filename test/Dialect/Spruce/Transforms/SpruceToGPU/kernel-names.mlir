@@ -1,4 +1,4 @@
-// RUN: spruce-opt -spruce-map-to-gpu -verify-roundtrip %s | FileCheck %s --implicit-check-not=spruce.kernel --implicit-check-not=spruce.yield
+// RUN: spruce-opt -convert-spruce-to-gpu -verify-roundtrip %s | FileCheck %s --implicit-check-not=spruce.kernel --implicit-check-not=spruce.yield
 
 // CHECK:       module attributes {gpu.container_module} {
 // CHECK-LABEL: gpu.module @spgemm_gpu {

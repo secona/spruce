@@ -1,7 +1,7 @@
 // RUN: spruce-opt -spruce-pipeline -verify-roundtrip %s | FileCheck %s --implicit-check-not=linalg.generic --implicit-check-not=spruce.mma --implicit-check-not=spruce.num_blocks --implicit-check-not=tensor.pad
 
 // Main lowering progress checkpoint. Keep the input aligned with the
-// SpruceGPUSparsification test: M=32, N=8, K=16 and 16x8 storage blocks.
+// LinalgToSpruce test: M=32, N=8, K=16 and 16x8 storage blocks.
 // Current output: SCF and vector contractions, with the block count lowered to
 // a positions-buffer load. Block coordinates and contents still use Spruce ops.
 

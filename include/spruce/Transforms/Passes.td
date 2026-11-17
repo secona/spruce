@@ -7,8 +7,8 @@ def SprucePipeline : Pass<"spruce-pipeline", "::mlir::ModuleOp"> {
   let summary = "spruce-pipeline";
 }
 
-def SpruceGPUSparsification : Pass<"spruce-gpu-sparsification", "::mlir::func::FuncOp"> {
-  let summary = "spruce-gpu-sparsification";
+def ConvertLinalgToSpruce : Pass<"convert-linalg-to-spruce", "::mlir::func::FuncOp"> {
+  let summary = "convert-linalg-to-spruce";
   let dependentDialects = [
     "::mlir::arith::ArithDialect",
     "::mlir::tensor::TensorDialect",
@@ -18,8 +18,8 @@ def SpruceGPUSparsification : Pass<"spruce-gpu-sparsification", "::mlir::func::F
   ];
 }
 
-def SpruceMapToGPU : Pass<"spruce-map-to-gpu", "::mlir::ModuleOp"> {
-  let summary = "spruce-map-to-gpu";
+def ConvertSpruceToGPU : Pass<"convert-spruce-to-gpu", "::mlir::ModuleOp"> {
+  let summary = "convert-spruce-to-gpu";
   let dependentDialects = [
     "::mlir::arith::ArithDialect",
     "::mlir::func::FuncDialect",
@@ -42,8 +42,8 @@ def SpruceTileMma : Pass<"spruce-tile-mma", "::mlir::func::FuncOp"> {
   let dependentDialects = ["::mlir::arith::ArithDialect", "::mlir::tensor::TensorDialect"];
 }
 
-def SpruceMmaToVector : Pass<"spruce-mma-to-vector", "::mlir::func::FuncOp"> {
-  let summary = "spruce-mma-to-vector";
+def ConvertSpruceToVector : Pass<"convert-spruce-to-vector", "::mlir::func::FuncOp"> {
+  let summary = "convert-spruce-to-vector";
   let dependentDialects = ["::mlir::arith::ArithDialect", "::mlir::vector::VectorDialect"];
 }
 

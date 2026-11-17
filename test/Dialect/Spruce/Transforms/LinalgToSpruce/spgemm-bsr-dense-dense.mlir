@@ -1,4 +1,4 @@
-// RUN: spruce-opt -split-input-file -spruce-gpu-sparsification -spruce-tile-mma -canonicalize -cse -verify-roundtrip %s | FileCheck %s --implicit-check-not=tensor.pad --implicit-check-not=linalg.generic
+// RUN: spruce-opt -split-input-file -convert-linalg-to-spruce -spruce-tile-mma -canonicalize -cse -verify-roundtrip %s | FileCheck %s --implicit-check-not=tensor.pad --implicit-check-not=linalg.generic
 
 // M=32, N=8, K=16 and 16x8 storage blocks produce exact 16x8x8 MMA tiles.
 

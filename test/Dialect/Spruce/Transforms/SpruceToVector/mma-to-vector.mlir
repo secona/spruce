@@ -1,5 +1,5 @@
-// RUN: spruce-opt -spruce-mma-to-vector -canonicalize -cse -verify-roundtrip %s | FileCheck %s --implicit-check-not=spruce.mma
-// RUN: spruce-opt -spruce-mma-to-vector -spruce-mma-to-vector -canonicalize -cse -verify-roundtrip %s | FileCheck %s --implicit-check-not=spruce.mma
+// RUN: spruce-opt -convert-spruce-to-vector -canonicalize -cse -verify-roundtrip %s | FileCheck %s --implicit-check-not=spruce.mma
+// RUN: spruce-opt -convert-spruce-to-vector -convert-spruce-to-vector -canonicalize -cse -verify-roundtrip %s | FileCheck %s --implicit-check-not=spruce.mma
 
 // CHECK-DAG: #[[TRANSPOSE:.*]] = affine_map<(d0, d1) -> (d1, d0)>
 // CHECK-DAG: #[[LHS_MAP:.*]] = affine_map<(d0, d1, d2) -> (d0, d2)>
