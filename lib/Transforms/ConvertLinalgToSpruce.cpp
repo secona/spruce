@@ -6,7 +6,7 @@
 #include "mlir/Dialect/Tensor/IR/Tensor.h"
 #include "mlir/IR/PatternMatch.h"
 #include "mlir/Support/LLVM.h"
-#include "mlir/Transforms/GreedyPatternRewriteDriver.h"
+#include "mlir/Transforms/DialectConversion.h"
 
 #include "spruce/IR/SpruceAttributes.h"
 #include "spruce/IR/SpruceDialect.h"
@@ -207,12 +207,18 @@ struct ConvertLinalgToSpruce
   using Base::Base;
 
   void runOnOperation() override {
+    ConversionTarget target(getContext());
+    target.addLegalDialect<arith::ArithDialect, scf::SCFDialect,
+                           tensor::TensorDialect, SpruceDialect>();
+    target.addIllegalOp<linalg::GenericOp>();
+
     MLIRContext *ctx = &getContext();
     RewritePatternSet patterns(ctx);
     patterns.add<LinalgGenericLowering>(ctx);
 
-    if (applyPatternsGreedily(getOperation(), std::move(patterns)).failed())
-      return signalPassFailure();
+    if (applyPartialConversion(getOperation(), target, std::move(patterns))
+            .failed())
+      signalPassFailure();
   }
 };
 
