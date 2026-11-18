@@ -82,30 +82,4 @@ def Spruce_GetBlockOp : Spruce_Op<"get_block"> {
   }];
 }
 
-def Spruce_NumBlocksOp : Spruce_Op<"num_blocks"> {
-  let arguments = (ins
-    AnyRankedTensor:$tensor);
-
-  let results = (outs
-    Index:$result);
-
-  let assemblyFormat = [{
-    $tensor attr-dict `:` type($tensor)
-  }];
-}
-
-def Spruce_BlockCoordinatesOp : Spruce_Op<"block_coordinates"> {
-  let arguments = (ins
-    AnyRankedTensor:$tensor,
-    Index:$blockIndex);
-
-  let results = (outs
-    Index:$row,
-    Index:$col);
-
-  let assemblyFormat = [{
-    $tensor `[` $blockIndex `]` attr-dict `:` type($tensor)
-  }];
-}
-
 #endif
