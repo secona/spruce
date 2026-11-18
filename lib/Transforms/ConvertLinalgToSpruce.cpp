@@ -132,68 +132,20 @@ struct LinalgGenericLowering : OpRewritePattern<linalg::GenericOp> {
     {
       OpBuilder::InsertionGuard guard(rewriter);
 
-      Value numBlocks =
-          NumBlocksOp::create(rewriter, loc, rewriter.getIndexType(), a);
-
-      auto kernel = KernelOp::create(rewriter, loc, TypeRange{cT},
-                                     ValueRange{a, b, c, numBlocks});
-
+      // Create spruce.kernel while retaining the target.
+      auto kernel = spruce::KernelOp::create(rewriter, loc, TypeRange{cT},
+                                             ValueRange{a, b, c});
       kernel->setAttr("spruce.target",
                       TargetAttr::get(rewriter.getContext(), 16, 8, 8));
 
+      // Create the mandatory first block of spruce.kernel.
       Block *body = rewriter.createBlock(
           &kernel.getBody(), {}, kernel->getOperandTypes(),
           SmallVector<Location>(kernel.getNumOperands(), loc));
-      a = body->getArgument(0);
-      b = body->getArgument(1);
-      c = body->getArgument(2);
-      numBlocks = body->getArgument(3);
 
-      Value zero = arith::ConstantIndexOp::create(rewriter, loc, 0);
-      Value one = arith::ConstantIndexOp::create(rewriter, loc, 1);
-      Value blockRows = arith::ConstantIndexOp::create(rewriter, loc, blockM);
-      Value blockCols = arith::ConstantIndexOp::create(rewriter, loc, blockK);
+      // Return the linalg.generic outs.
+      spruce::YieldOp::create(rewriter, loc, body->getArgument(2));
 
-      auto aBlockType =
-          RankedTensorType::get({blockM, blockK}, aT.getElementType());
-      auto accType = RankedTensorType::get({blockM, n}, cT.getElementType());
-      SmallVector<OpFoldResult> accSizes{rewriter.getIndexAttr(blockM),
-                                         rewriter.getIndexAttr(n)};
-      SmallVector<OpFoldResult> rhsSizes{rewriter.getIndexAttr(blockK),
-                                         rewriter.getIndexAttr(n)};
-      SmallVector<OpFoldResult> strides{rewriter.getIndexAttr(1),
-                                        rewriter.getIndexAttr(1)};
-
-      // Visit stored blocks by ordinal, keeping their storage layout abstract.
-      auto blocks = scf::ForOp::create(rewriter, loc, zero, numBlocks, one,
-                                       ValueRange{c});
-      rewriter.setInsertionPointToStart(blocks.getBody());
-      Value p = blocks.getInductionVar();
-      auto coordinates =
-          BlockCoordinatesOp::create(rewriter, loc, rewriter.getIndexType(),
-                                     rewriter.getIndexType(), a, p);
-      Value rowOffset =
-          arith::MulIOp::create(rewriter, loc, coordinates.getRow(), blockRows);
-      SmallVector<OpFoldResult> accOffsets{rowOffset, rewriter.getIndexAttr(0)};
-      Value destination = blocks.getRegionIterArgs()[0];
-      Value acc = tensor::ExtractSliceOp::create(rewriter, loc, destination,
-                                                 accOffsets, accSizes, strides);
-
-      Value lhs = GetBlockOp::create(rewriter, loc, aBlockType, a, p);
-      Value rhsOffset =
-          arith::MulIOp::create(rewriter, loc, coordinates.getCol(), blockCols);
-      Value rhs = tensor::ExtractSliceOp::create(
-          rewriter, loc, b,
-          ArrayRef<OpFoldResult>{rhsOffset, rewriter.getIndexAttr(0)}, rhsSizes,
-          strides);
-      Value updated = MmaOp::create(rewriter, loc, accType, lhs, rhs, acc);
-
-      Value updatedDestination = tensor::InsertSliceOp::create(
-          rewriter, loc, updated, destination, accOffsets, accSizes, strides);
-      scf::YieldOp::create(rewriter, loc, updatedDestination);
-
-      rewriter.setInsertionPointAfter(blocks);
-      spruce::YieldOp::create(rewriter, loc, blocks.getResults());
       result = kernel.getResult(0);
     }
 
