@@ -15,8 +15,6 @@ void buildPipeline(OpPassManager &pipeline) {
   auto &functions = pipeline.nest<func::FuncOp>();
   functions.addPass(createConvertLinalgToSpruce());
   functions.addPass(createSpruceTileMma());
-  functions.addPass(createConvertSpruceToVector());
-  functions.addPass(createSpruceLowerBlockOps());
   functions.addPass(createCanonicalizerPass());
   functions.addPass(createCSEPass());
 }

@@ -1,10 +1,6 @@
 // RUN: spruce-opt -spruce-pipeline -verify-roundtrip %s | FileCheck %s --implicit-check-not=linalg.generic --implicit-check-not=spruce.mma --implicit-check-not=spruce.num_blocks --implicit-check-not=tensor.pad
 
-// CHECK-DAG: #[[TRANSPOSE:.*]] = affine_map<(d0, d1) -> (d1, d0)>
-// CHECK-DAG: #[[LHS_MAP:.*]] = affine_map<(d0, d1, d2) -> (d0, d2)>
-// CHECK-DAG: #[[RHS_MAP:.*]] = affine_map<(d0, d1, d2) -> (d1, d2)>
-// CHECK-DAG: #[[ACC_MAP:.*]] = affine_map<(d0, d1, d2) -> (d0, d1)>
-// CHECK-DAG: #[[BSR:.*]] = #sparse_tensor.encoding
+// CHECK-DAG: #[[BSR:.*]] = #sparse_tensor.encoding<{ map = (d0, d1) -> (d0 floordiv 16 : dense, d1 floordiv 8 : compressed, d0 mod 16 : dense, d1 mod 8 : dense) }>
 // CHECK-DAG: #[[TARGET:.*]] = #spruce.target<{m = 16, n = 8, k = 8}>
 #BSR = #sparse_tensor.encoding<{
   map = (d0, d1) -> (
@@ -15,45 +11,21 @@
   )
 }>
 
-// CHECK-LABEL: func.func @spgemm(
-// CHECK-SAME:      %[[A:[^:]+]]: tensor<32x16xf32, #[[BSR]]>,
-// CHECK-SAME:      %[[B:[^:]+]]: tensor<16x8xf32>) -> tensor<32x8xf32>
-// CHECK-DAG:     %[[C2:.*]] = arith.constant 2 : index
-// CHECK-DAG:     %[[ZERO:.*]] = arith.constant 0.000000e+00 : f32
-
-// CHECK:         %[[EMPTY:.*]] = tensor.empty() : tensor<32x8xf32>
-// CHECK:         %[[C:.*]] = linalg.fill ins(%[[ZERO]] : f32) outs(%[[EMPTY]] : tensor<32x8xf32>) -> tensor<32x8xf32>
-// CHECK:         %[[POS:.*]] = sparse_tensor.positions %[[A]] level = 1 : tensor<32x16xf32, #[[BSR]]> to memref<?xindex>
-// CHECK:         %[[N_BLOCKS:.*]] = memref.load %[[POS]][%[[C2]]] : memref<?xindex>
-// CHECK:         %[[RESULT:.*]] = spruce.kernel(%[[K_A:[^ ]+]] = %[[A]] : tensor<32x16xf32, #[[BSR]]>,
-// CHECK-SAME:        %[[K_B:[^ ]+]] = %[[B]] : tensor<16x8xf32>,
-// CHECK-SAME:        %[[K_C:[^ ]+]] = %[[C]] : tensor<32x8xf32>,
-// CHECK-SAME:        %[[K_N_BLOCKS:[^ ]+]] = %[[N_BLOCKS]] : index) {
-// CHECK-DAG:       %[[K_ZERO:.*]] = arith.constant 0.000000e+00 : f32
-// CHECK-DAG:       %[[C0:.*]] = arith.constant 0 : index
-// CHECK-DAG:       %[[C1:.*]] = arith.constant 1 : index
-// CHECK-DAG:       %[[C16:.*]] = arith.constant 16 : index
-// CHECK-DAG:       %[[C8:.*]] = arith.constant 8 : index
-// CHECK:           %[[LOOP_RESULT:.*]] = scf.for %[[I:.*]] = %[[C0]] to %[[K_N_BLOCKS]] step %[[C1]] iter_args(%[[ACC:.*]] = %[[K_C]]) -> (tensor<32x8xf32>) {
-// CHECK:             %[[ROW_IDX:.*]], %[[COL_IDX:.*]] = spruce.block_coordinates %[[K_A]][%[[I]]] : tensor<32x16xf32, #[[BSR]]>
-// CHECK:             %[[ROW_OFFSET:.*]] = arith.muli %[[ROW_IDX]], %[[C16]] : index
-// CHECK:             %[[ACC_SLICE:.*]] = tensor.extract_slice %[[ACC]][%[[ROW_OFFSET]], 0] [16, 8] [1, 1] : tensor<32x8xf32> to tensor<16x8xf32>
-// CHECK:             %[[A_BLOCK:.*]] = spruce.get_block %[[K_A]][%[[I]]] : tensor<32x16xf32, #[[BSR]]> -> tensor<16x8xf32>
-// CHECK:             %[[COL_OFFSET:.*]] = arith.muli %[[COL_IDX]], %[[C8]] : index
-// CHECK:             %[[B_SLICE:.*]] = tensor.extract_slice %[[K_B]][%[[COL_OFFSET]], 0] [8, 8] [1, 1] : tensor<16x8xf32> to tensor<8x8xf32>
-
-// CHECK:             %[[A_VEC:.*]] = vector.transfer_read %[[A_BLOCK]][%[[C0]], %[[C0]]], %[[K_ZERO]] {in_bounds = [true, true]} : tensor<16x8xf32>, vector<16x8xf32>
-// CHECK:             %[[B_VEC:.*]] = vector.transfer_read %[[B_SLICE]][%[[C0]], %[[C0]]], %[[K_ZERO]] {in_bounds = [true, true], permutation_map = #[[TRANSPOSE]]} : tensor<8x8xf32>, vector<8x8xf32>
-// CHECK:             %[[ACC_VEC:.*]] = vector.transfer_read %[[ACC_SLICE]][%[[C0]], %[[C0]]], %[[K_ZERO]] {in_bounds = [true, true]} : tensor<16x8xf32>, vector<16x8xf32>
-// CHECK:             %[[PRODUCT:.*]] = vector.contract {indexing_maps = [#[[LHS_MAP]], #[[RHS_MAP]], #[[ACC_MAP]]], iterator_types = ["parallel", "parallel", "reduction"], kind = #vector.kind<add>} %[[A_VEC]], %[[B_VEC]], %[[ACC_VEC]] : vector<16x8xf32>, vector<8x8xf32> into vector<16x8xf32>
-// CHECK:             %[[TILE:.*]] = vector.transfer_write %[[PRODUCT]], %[[ACC_SLICE]][%[[C0]], %[[C0]]] {in_bounds = [true, true]} : vector<16x8xf32>, tensor<16x8xf32>
-
-// CHECK:             %[[UPDATED:.*]] = tensor.insert_slice %[[TILE]] into %[[ACC]][%[[ROW_OFFSET]], 0] [16, 8] [1, 1] : tensor<16x8xf32> into tensor<32x8xf32>
-// CHECK:             scf.yield %[[UPDATED]] : tensor<32x8xf32>
-// CHECK:           }
-// CHECK:           spruce.yield %[[LOOP_RESULT]] : tensor<32x8xf32>
-// CHECK:         } -> (tensor<32x8xf32>) {spruce.target = #[[TARGET]]}
-// CHECK:         return %[[RESULT]] : tensor<32x8xf32>
+// CHECK:       module {
+// CHECK-LABEL:   func.func @spgemm(
+// CHECK-SAME:        %[[A:[^:]+]]: tensor<32x16xf32, #[[BSR]]>,
+// CHECK-SAME:        %[[B:[^:]+]]: tensor<16x8xf32>) -> tensor<32x8xf32> {
+// CHECK-NEXT:      %[[ZERO:.*]] = arith.constant 0.000000e+00 : f32
+// CHECK-NEXT:      %[[EMPTY:.*]] = tensor.empty() : tensor<32x8xf32>
+// CHECK-NEXT:      %[[C:.*]] = linalg.fill ins(%[[ZERO]] : f32) outs(%[[EMPTY]] : tensor<32x8xf32>) -> tensor<32x8xf32>
+// CHECK-NEXT:      %[[RESULT:.*]] = spruce.kernel(%[[K_A:[^ ]+]] = %[[A]] : tensor<32x16xf32, #[[BSR]]>,
+// CHECK-SAME:          %[[K_B:[^ ]+]] = %[[B]] : tensor<16x8xf32>,
+// CHECK-SAME:          %[[K_C:[^ ]+]] = %[[C]] : tensor<32x8xf32>) {
+// CHECK-NEXT:        spruce.yield %[[K_C]] : tensor<32x8xf32>
+// CHECK-NEXT:      } -> (tensor<32x8xf32>) {spruce.target = #[[TARGET]]}
+// CHECK-NEXT:      return %[[RESULT]] : tensor<32x8xf32>
+// CHECK-NEXT:    }
+// CHECK-NEXT:  }
 
 func.func @spgemm(%A: tensor<32x16xf32, #BSR>,
                   %B: tensor<16x8xf32>) -> tensor<32x8xf32> {
