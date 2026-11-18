@@ -4,13 +4,22 @@
 include "spruce/IR/SpruceDialect.td"
 include "mlir/IR/OpBase.td"
 
+// spruce ops should be designed as sparse-aware ops.
 class Spruce_Op<string mnemonic, list<Trait> traits = []>
     : Op<Spruce_Dialect, mnemonic, traits>;
+
+// -----------------------------------------------------------------------------
+// KernelOp
+// -----------------------------------------------------------------------------
 
 def Spruce_KernelOp : Spruce_Op<"kernel", [
   IsolatedFromAbove,
   SingleBlock
 ]> {
+  let description = [{
+    `spruce.kernel` represents a GPU kernel function.
+  }];
+
   let arguments = (ins
     Variadic<AnyType>:$inputs);
 
@@ -28,10 +37,19 @@ def Spruce_KernelOp : Spruce_Op<"kernel", [
   let hasVerifier = 1;
 }
 
+// -----------------------------------------------------------------------------
+// YieldOp
+// -----------------------------------------------------------------------------
+
 def Spruce_YieldOp : Spruce_Op<"yield", [
   Terminator,
   HasParent<"KernelOp">
 ]> {
+  let description = [{
+    `spruce.yield` represents returning a value from a function, like
+    `spruce.kernel`.
+  }];
+
   let arguments = (ins
     Variadic<AnyType>:$values);
 
@@ -40,7 +58,19 @@ def Spruce_YieldOp : Spruce_Op<"yield", [
   }];
 }
 
+// -----------------------------------------------------------------------------
+// MmaOp
+// -----------------------------------------------------------------------------
+
 def Spruce_MmaOp : Spruce_Op<"mma"> {
+  let description = [{
+    `spruce.mma` represents matrix multiply-add instruction in a GPU, such as
+    the `mma.sync` instruction in NVIDIA GPUs. `spruce.mma` is designed to be
+    at a higher level without the shape and type restrictions that `mma.sync`
+    instructions have. It will be lowered to `mma.sync` by the pipeline via
+    tiling and type conversions.
+  }];
+
   let arguments = (ins
     AnyRankedTensor:$lhs,
     AnyRankedTensor:$rhs,
@@ -68,7 +98,15 @@ def Spruce_MmaOp : Spruce_Op<"mma"> {
   let hasVerifier = 1;
 }
 
+// -----------------------------------------------------------------------------
+// GetBlockOp
+// -----------------------------------------------------------------------------
+
 def Spruce_GetBlockOp : Spruce_Op<"get_block"> {
+  let description = [{
+    `spruce.get_block` represents getting a block of a tensor.
+  }];
+
   let arguments = (ins
     AnyRankedTensor:$tensor,
     Index:$blockIndex);
