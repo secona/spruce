@@ -1,2 +1,2 @@
-add_subdirectory(IR)
+add_subdirectory(Dialect)
 add_subdirectory(Transforms)

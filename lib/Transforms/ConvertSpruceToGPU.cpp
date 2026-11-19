@@ -4,7 +4,7 @@
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/IR/PatternMatch.h"
 
-#include "spruce/IR/SpruceDialect.h"
+#include "spruce/Dialect/Spruce/IR/SpruceDialect.h"
 #include "spruce/Transforms/Passes.h"
 
 #include <string>

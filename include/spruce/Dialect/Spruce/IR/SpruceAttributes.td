@@ -1,7 +1,7 @@
 #ifndef SPRUCE_IR_SPRUCEATTRIBUTES_TD
 #define SPRUCE_IR_SPRUCEATTRIBUTES_TD
 
-include "spruce/IR/SpruceDialect.td"
+include "spruce/Dialect/Spruce/IR/SpruceDialect.td"
 include "mlir/IR/TensorEncoding.td"
 
 class Spruce_Attr<string name, list<Trait> traits = []>

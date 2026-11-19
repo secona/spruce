@@ -4,10 +4,10 @@
 #include "mlir/IR/Dialect.h"
 #include "mlir/IR/BuiltinTypes.h"
 
-#include "spruce/IR/SpruceDialect.h.inc"
-#include "spruce/IR/SpruceTypes.h"
+#include "spruce/Dialect/Spruce/IR/SpruceDialect.h.inc"
+#include "spruce/Dialect/Spruce/IR/SpruceTypes.h"
 
 #define GET_OP_CLASSES
-#include "spruce/IR/SpruceOps.h.inc"
+#include "spruce/Dialect/Spruce/IR/SpruceOps.h.inc"
 
 #endif

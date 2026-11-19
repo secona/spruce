@@ -1,16 +1,16 @@
-#include "spruce/IR/SpruceAttributes.h"
-#include "spruce/IR/SpruceDialect.h"
+#include "spruce/Dialect/Spruce/IR/SpruceAttributes.h"
+#include "spruce/Dialect/Spruce/IR/SpruceDialect.h"
 
 #include "mlir/IR/DialectImplementation.h"
 #include "llvm/ADT/TypeSwitch.h"
 
 #define GET_ATTRDEF_CLASSES
-#include "spruce/IR/SpruceAttributes.cpp.inc"
+#include "spruce/Dialect/Spruce/IR/SpruceAttributes.cpp.inc"
 
 void mlir::spruce::SpruceDialect::registerAttributes() {
   addAttributes<
 #define GET_ATTRDEF_LIST
-#include "spruce/IR/SpruceAttributes.cpp.inc"
+#include "spruce/Dialect/Spruce/IR/SpruceAttributes.cpp.inc"
       >();
 }
 

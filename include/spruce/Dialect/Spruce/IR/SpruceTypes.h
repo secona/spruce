@@ -2,6 +2,6 @@
 #define SPRUCE_IR_SPRUCETYPES_H
 
 #define GET_TYPEDEF_CLASSES
-#include "spruce/IR/SpruceTypes.h.inc"
+#include "spruce/Dialect/Spruce/IR/SpruceTypes.h.inc"
 
 #endif

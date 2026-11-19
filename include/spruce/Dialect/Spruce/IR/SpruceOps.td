@@ -1,8 +1,8 @@
 #ifndef SPRUCE_IR_SPRUCEOPS_TD
 #define SPRUCE_IR_SPRUCEOPS_TD
 
-include "spruce/IR/SpruceDialect.td"
-include "spruce/IR/SpruceTypes.td"
+include "spruce/Dialect/Spruce/IR/SpruceDialect.td"
+include "spruce/Dialect/Spruce/IR/SpruceTypes.td"
 include "mlir/IR/OpBase.td"
 
 // spruce ops should be designed as sparse-aware ops.

@@ -5,7 +5,7 @@
 #include "mlir/Transforms/DialectConversion.h"
 #include "llvm/Support/MathExtras.h"
 
-#include "spruce/IR/SpruceDialect.h"
+#include "spruce/Dialect/Spruce/IR/SpruceDialect.h"
 #include "spruce/Transforms/MmaUtils.h"
 #include "spruce/Transforms/Passes.h"
 

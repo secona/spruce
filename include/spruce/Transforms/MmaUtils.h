@@ -6,7 +6,7 @@
 #include <cstdint>
 #include <tuple>
 
-#include "spruce/IR/SpruceDialect.h"
+#include "spruce/Dialect/Spruce/IR/SpruceDialect.h"
 
 namespace mlir::spruce {
 

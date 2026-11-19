@@ -1,13 +1,13 @@
-#include "spruce/IR/SpruceDialect.h"
-#include "spruce/IR/SpruceAttributes.h"
+#include "spruce/Dialect/Spruce/IR/SpruceDialect.h"
+#include "spruce/Dialect/Spruce/IR/SpruceAttributes.h"
 
 #include "mlir/IR/OpImplementation.h"
 #include "llvm/ADT/STLExtras.h"
 
-#include "spruce/IR/SpruceDialect.cpp.inc"
+#include "spruce/Dialect/Spruce/IR/SpruceDialect.cpp.inc"
 
 #define GET_TYPEDEF_CLASSES
-#include "spruce/IR/SpruceTypes.cpp.inc"
+#include "spruce/Dialect/Spruce/IR/SpruceTypes.cpp.inc"
 
 namespace mlir::spruce {
 
@@ -47,7 +47,7 @@ static void printKernelBody(OpAsmPrinter &printer, Operation *,
 } // namespace mlir::spruce
 
 #define GET_OP_CLASSES
-#include "spruce/IR/SpruceOps.cpp.inc"
+#include "spruce/Dialect/Spruce/IR/SpruceOps.cpp.inc"
 
 namespace mlir {
 namespace spruce {
@@ -61,12 +61,12 @@ void SpruceDialect::initialize() {
 
   addTypes<
 #define GET_TYPEDEF_LIST
-#include "spruce/IR/SpruceTypes.cpp.inc"
+#include "spruce/Dialect/Spruce/IR/SpruceTypes.cpp.inc"
       >();
 
   addOperations<
 #define GET_OP_LIST
-#include "spruce/IR/SpruceOps.cpp.inc"
+#include "spruce/Dialect/Spruce/IR/SpruceOps.cpp.inc"
       >();
 }
 

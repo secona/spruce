@@ -5,6 +5,6 @@
 #include "mlir/IR/TensorEncoding.h"
 
 #define GET_ATTRDEF_CLASSES
-#include "spruce/IR/SpruceAttributes.h.inc"
+#include "spruce/Dialect/Spruce/IR/SpruceAttributes.h.inc"
 
 #endif

@@ -5,7 +5,7 @@
 #include "mlir/IR/PatternMatch.h"
 #include "mlir/Transforms/GreedyPatternRewriteDriver.h"
 
-#include "spruce/IR/SpruceDialect.h"
+#include "spruce/Dialect/Spruce/IR/SpruceDialect.h"
 #include "spruce/Transforms/Passes.h"
 
 namespace mlir::spruce {
