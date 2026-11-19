@@ -9,6 +9,7 @@ def Spruce_Dialect : Dialect {
 
   let dependentDialects = ["::mlir::sparse_tensor::SparseTensorDialect"];
   let useDefaultAttributePrinterParser = 1;
+  let useDefaultTypePrinterParser = 1;
 
   let extraClassDeclaration = [{
     void registerAttributes();

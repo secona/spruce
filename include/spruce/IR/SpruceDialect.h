@@ -5,6 +5,7 @@
 #include "mlir/IR/BuiltinTypes.h"
 
 #include "spruce/IR/SpruceDialect.h.inc"
+#include "spruce/IR/SpruceTypes.h"
 
 #define GET_OP_CLASSES
 #include "spruce/IR/SpruceOps.h.inc"
