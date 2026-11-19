@@ -1,10 +1,10 @@
 // RUN: spruce-opt -verify-roundtrip %s | FileCheck %s
 
 // CHECK-LABEL: func.func @main()
-// CHECK:         %{{.*}} = spruce.create_fragment : !spruce.fragment
+// CHECK:         %{{.*}} = spruce_gpu.create_fragment : !spruce_gpu.fragment
 // CHECK:         return
 
 func.func @main() {
-  %0 = spruce.create_fragment : !spruce.fragment
+  %0 = spruce_gpu.create_fragment : !spruce_gpu.fragment
   return
 }

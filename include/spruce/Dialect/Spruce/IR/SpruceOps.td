@@ -2,7 +2,6 @@
 #define SPRUCE_IR_SPRUCEOPS_TD
 
 include "spruce/Dialect/Spruce/IR/SpruceDialect.td"
-include "spruce/Dialect/Spruce/IR/SpruceTypes.td"
 include "mlir/IR/OpBase.td"
 
 // spruce ops should be designed as sparse-aware ops.
@@ -97,19 +96,6 @@ def Spruce_MmaOp : Spruce_Op<"mma"> {
   }];
 
   let hasVerifier = 1;
-}
-
-// -----------------------------------------------------------------------------
-// CreateFragmentOp
-// -----------------------------------------------------------------------------
-
-def Spruce_CreateFragmentOp : Spruce_Op<"create_fragment"> {
-  let results = (outs
-    Spruce_FragmentType:$result);
-
-  let assemblyFormat = [{
-    attr-dict `:` type($result)
-  }];
 }
 
 // -----------------------------------------------------------------------------
