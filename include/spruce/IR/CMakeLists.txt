@@ -9,4 +9,8 @@ mlir_tablegen(SpruceOps.cpp.inc -gen-op-defs)
 set(LLVM_TARGET_DEFINITIONS SpruceAttributes.td)
 mlir_tablegen(SpruceAttributes.h.inc -gen-attrdef-decls -attrdefs-dialect=spruce)
 mlir_tablegen(SpruceAttributes.cpp.inc -gen-attrdef-defs -attrdefs-dialect=spruce)
+
+set(LLVM_TARGET_DEFINITIONS SpruceTypes.td)
+mlir_tablegen(SpruceTypes.h.inc -gen-typedef-decls -typedefs-dialect=spruce)
+mlir_tablegen(SpruceTypes.cpp.inc -gen-typedef-defs -typedefs-dialect=spruce)
 add_public_tablegen_target(SpruceDialectIncGen)
