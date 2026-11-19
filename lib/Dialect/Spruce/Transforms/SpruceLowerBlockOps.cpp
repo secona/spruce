@@ -6,11 +6,11 @@
 #include "mlir/Transforms/GreedyPatternRewriteDriver.h"
 
 #include "spruce/Dialect/Spruce/IR/SpruceDialect.h"
-#include "spruce/Transforms/Passes.h"
+#include "spruce/Dialect/Spruce/Transforms/Passes.h"
 
 namespace mlir::spruce {
 #define GEN_PASS_DEF_SPRUCELOWERBLOCKOPS
-#include "spruce/Transforms/Passes.h.inc"
+#include "spruce/Dialect/Spruce/Transforms/Passes.h.inc"
 
 namespace {
 

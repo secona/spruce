@@ -8,11 +8,15 @@
 #include "mlir/Tools/mlir-opt/MlirOptMain.h"
 #include "spruce/Dialect/Spruce/IR/SpruceDialect.h"
 #include "spruce/Dialect/SpruceGPU/IR/SpruceGPUDialect.h"
-#include "spruce/Transforms/Passes.h"
+#include "spruce/Conversions/Passes.h"
+#include "spruce/Dialect/Spruce/Transforms/Passes.h"
+#include "spruce/SprucePipeline.h"
 
 int main(int argc, char **argv) {
   mlir::registerAllPasses();
-  mlir::spruce::registerSprucePasses();
+  mlir::spruce::registerSpruceConversionsPasses();
+  mlir::spruce::registerSpruceTransformsPasses();
+  mlir::spruce::registerSprucePipelinesPasses();
 
   mlir::DialectRegistry registry;
   registry.insert<mlir::spruce::SpruceDialect,

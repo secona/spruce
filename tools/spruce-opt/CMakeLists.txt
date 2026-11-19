@@ -4,6 +4,8 @@ llvm_update_compile_flags(spruce-opt)
 mlir_target_link_libraries(spruce-opt PRIVATE
   SpruceDialect
   SpruceGPUDialect
+  SpruceConversions
+  SprucePipeline
   SpruceTransforms
   MLIROptLib
   MLIRRegisterAllDialects

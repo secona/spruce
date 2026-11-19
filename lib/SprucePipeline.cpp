@@ -3,11 +3,13 @@
 #include "mlir/Pass/PassManager.h"
 #include "mlir/Transforms/Passes.h"
 
-#include "spruce/Transforms/Passes.h"
+#include "spruce/Conversions/Passes.h"
+#include "spruce/Dialect/Spruce/Transforms/Passes.h"
+#include "spruce/SprucePipeline.h"
 
 namespace mlir::spruce {
 #define GEN_PASS_DEF_SPRUCEPIPELINE
-#include "spruce/Transforms/Passes.h.inc"
+#include "spruce/SprucePipeline.h.inc"
 
 namespace {
 

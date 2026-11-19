@@ -10,12 +10,12 @@
 
 #include "spruce/Dialect/Spruce/IR/SpruceAttributes.h"
 #include "spruce/Dialect/Spruce/IR/SpruceDialect.h"
-#include "spruce/Transforms/MmaUtils.h"
-#include "spruce/Transforms/Passes.h"
+#include "spruce/Dialect/Spruce/Transforms/MmaUtils.h"
+#include "spruce/Conversions/Passes.h"
 
 namespace mlir::spruce {
 #define GEN_PASS_DEF_CONVERTLINALGTOSPRUCE
-#include "spruce/Transforms/Passes.h.inc"
+#include "spruce/Conversions/Passes.h.inc"
 
 namespace {
 

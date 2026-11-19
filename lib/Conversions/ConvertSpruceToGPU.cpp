@@ -5,13 +5,13 @@
 #include "mlir/IR/PatternMatch.h"
 
 #include "spruce/Dialect/Spruce/IR/SpruceDialect.h"
-#include "spruce/Transforms/Passes.h"
+#include "spruce/Conversions/Passes.h"
 
 #include <string>
 
 namespace mlir::spruce {
 #define GEN_PASS_DEF_CONVERTSPRUCETOGPU
-#include "spruce/Transforms/Passes.h.inc"
+#include "spruce/Conversions/Passes.h.inc"
 
 namespace {
 
