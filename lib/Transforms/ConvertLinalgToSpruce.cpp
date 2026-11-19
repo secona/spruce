@@ -40,6 +40,8 @@ bool isMatmul(linalg::GenericOp op) {
   return true;
 }
 
+// Get the block sizes from dim2lvl map of the sparse tensor encoding. It works
+// by looping each level and checking for `floordiv` and `mod` kinds.
 std::optional<llvm::SmallVector<int64_t>> getBlockSizes(AffineMap dimToLvl) {
   llvm::SmallVector<int64_t> sizes(dimToLvl.getNumDims(), 0);
   llvm::SmallVector<int64_t> modSizes(dimToLvl.getNumDims(), 0);
@@ -84,26 +86,31 @@ struct LinalgGenericLowering : OpRewritePattern<linalg::GenericOp> {
   LogicalResult matchAndRewrite(linalg::GenericOp op,
                                 PatternRewriter &rewriter) const override {
     auto inputs = op.getDpsInputs();
+    auto inits = op.getDpsInits();
 
     // NOTE: Assume every linalg.generic is proper.
     Value a = inputs[0];
     Value b = inputs[1];
-    Value c = op.getDpsInits()[0];
+    Value c = inits[0];
 
     auto aT = dyn_cast_or_null<RankedTensorType>(a.getType());
     auto bT = dyn_cast_or_null<RankedTensorType>(b.getType());
     auto cT = dyn_cast_or_null<RankedTensorType>(c.getType());
 
+    // Only ranked tensors.
     if (!aT || !bT || !cT)
       return failure();
 
+    // TODO: sparse B and C matrices.
     if (bT.getEncoding() || cT.getEncoding())
       return failure();
 
+    // Only accept if A is sparse.
     auto aEnc = dyn_cast_or_null<SparseTensorEncodingAttr>(aT.getEncoding());
     if (!aEnc)
       return failure();
 
+    // TODO: Support more than just block matmul.
     auto dim2lvl = aEnc.getDimToLvl();
     if (!sparse_tensor::isBlockSparsity(dim2lvl) || !isMatmul(op))
       return failure();
@@ -118,9 +125,11 @@ struct LinalgGenericLowering : OpRewritePattern<linalg::GenericOp> {
     int64_t blockK = (*blockSizes)[1];
     auto [m, n, k] = getMNK(aT, bT);
 
+    // TODO: Accept matrices that are not multiples of its blocks.
     if (m % blockM != 0 || k % blockK != 0)
       return failure();
 
+    // Edge case: Rank-0 matrix.
     if (m == 0 || n == 0 || k == 0) {
       rewriter.replaceOp(op, c);
       return success();
