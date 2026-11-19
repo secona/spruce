@@ -21,4 +21,17 @@ def SpruceGPU_CreateFragmentOp : SpruceGPU_Op<"create_fragment"> {
   }];
 }
 
+// -----------------------------------------------------------------------------
+// MmaLoadMatrixOp
+// -----------------------------------------------------------------------------
+
+def SpruceGPU_MmaLoadMatrixOp : SpruceGPU_Op<"mma.load_matrix"> {
+  let arguments = (ins
+    SpruceGPU_FragmentType:$fragment);
+
+  let assemblyFormat = [{
+    $fragment attr-dict `:` type($fragment)
+  }];
+}
+
 #endif
