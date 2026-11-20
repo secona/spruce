@@ -35,6 +35,28 @@ def SpruceGPU_MmaLoadMatrixOp : SpruceGPU_Op<"mma.load_matrix"> {
 }
 
 // -----------------------------------------------------------------------------
+// MmaStoreMatrixOp
+// -----------------------------------------------------------------------------
+
+def SpruceGPU_MmaStoreMatrixOp : SpruceGPU_Op<"mma.store_matrix", [
+  AllTypesMatch<["out", "result"]>
+]> {
+  let arguments = (ins
+    SpruceGPU_FragmentType:$fragment,
+    AnyRankedTensor:$out);
+
+  let results = (outs
+    AnyRankedTensor:$result);
+
+  let assemblyFormat = [{
+    $fragment
+    `out` `(` $out `)`
+    attr-dict
+    `:` type($fragment) `,` type($result)
+  }];
+}
+
+// -----------------------------------------------------------------------------
 // MmaOp
 // -----------------------------------------------------------------------------
 
