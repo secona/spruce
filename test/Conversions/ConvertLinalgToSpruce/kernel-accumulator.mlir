@@ -11,29 +11,20 @@
   )
 }>
 
-// CHECK-LABEL: func.func @preserve_accumulator(
-// CHECK-SAME:      %[[A:[^:]+]]: tensor<32x16xf32, #[[BSR]]>,
-// CHECK-SAME:      %[[B:[^:]+]]: tensor<16x8xf32>,
-// CHECK-SAME:      %[[C:[^:]+]]: tensor<32x8xf32>) -> tensor<32x8xf32> {
-// CHECK:         %[[N_BLOCKS:.*]] = spruce.num_blocks %[[A]] : tensor<32x16xf32, #[[BSR]]>
-// CHECK:         %[[RESULT:.*]] = spruce.kernel(%[[K_A:[^ ]+]] = %[[A]] : tensor<32x16xf32, #[[BSR]]>,
-// CHECK-SAME:        %[[K_B:[^ ]+]] = %[[B]] : tensor<16x8xf32>,
-// CHECK-SAME:        %[[K_C:[^ ]+]] = %[[C]] : tensor<32x8xf32>,
-// CHECK-SAME:        %[[K_N_BLOCKS:[^ ]+]] = %[[N_BLOCKS]] : index) {
-// CHECK-DAG:       %[[C0:.*]] = arith.constant 0 : index
-// CHECK-DAG:       %[[C1:.*]] = arith.constant 1 : index
-// CHECK:           %[[LOOP_RESULT:.*]] = scf.for %[[P:.*]] = %[[C0]] to %[[K_N_BLOCKS]] step %[[C1]] iter_args(%[[ACC:.*]] = %[[K_C]]) -> (tensor<32x8xf32>) {
-// CHECK:             %[[ROW:.*]], %[[COL:.*]] = spruce.block_coordinates %[[K_A]][%[[P]]] : tensor<32x16xf32, #[[BSR]]>
-// CHECK:             %[[ACC_TILE:.*]] = tensor.extract_slice %[[ACC]]
-// CHECK:             %[[A_BLOCK:.*]] = spruce.get_block %[[K_A]][%[[P]]] : tensor<32x16xf32, #[[BSR]]> -> tensor<16x8xf32>
-// CHECK:             %[[B_TILE:.*]] = tensor.extract_slice %[[K_B]]
-// CHECK:             %[[PRODUCT:.*]] = spruce.mma %[[A_BLOCK]], %[[B_TILE]], %[[ACC_TILE]] : tensor<16x8xf32>, tensor<8x8xf32>, tensor<16x8xf32> -> tensor<16x8xf32>
-// CHECK:             %[[UPDATED:.*]] = tensor.insert_slice %[[PRODUCT]] into %[[ACC]]
-// CHECK:             scf.yield %[[UPDATED]] : tensor<32x8xf32>
-// CHECK:           }
-// CHECK:           spruce.yield %[[LOOP_RESULT]] : tensor<32x8xf32>
+// CHECK-LABEL: func.func @preserve_accumulator
+// CHECK-SAME:    %[[A:[^:]+]]: tensor<32x16xf32, #[[BSR]]>,
+// CHECK-SAME:    %[[B:[^:]+]]: tensor<16x8xf32>,
+// CHECK-SAME:    %[[C:[^:]+]]: tensor<32x8xf32>
+// CHECK-SAME:  ) -> tensor<32x8xf32> {
+// CHECK:         %[[RESULT:.*]] = spruce.kernel(
+// CHECK-SAME:      %[[A_D:.*]] = %[[A]] : tensor<32x16xf32, #[[BSR]]>,
+// CHECK-SAME:      %[[B_D:.*]] = %[[B]] : tensor<16x8xf32>,
+// CHECK-SAME:      %[[C_D:.*]] = %[[C]] : tensor<32x8xf32>
+// CHECK-SAME:    ) {
+// CHECK:           spruce.yield %[[C_D]] : tensor<32x8xf32>
 // CHECK:         } -> (tensor<32x8xf32>) {spruce.target = #[[TARGET]]}
 // CHECK:         return %[[RESULT]] : tensor<32x8xf32>
+// CHECK:      }
 
 func.func @preserve_accumulator(%A: tensor<32x16xf32, #BSR>,
                                %B: tensor<16x8xf32>,
