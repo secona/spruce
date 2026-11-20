@@ -26,7 +26,12 @@ struct MmaOpConversion : OpRewritePattern<MmaOp> {
     auto ctx = op.getContext();
     auto [m, n, k] = op.getMNK();
 
-    auto fragT = spruce_gpu::FragmentType::get(ctx);
+    // Only accept floating point types for now.
+    auto ty = cast<FloatType>(op.getType().getElementType());
+    if (!ty)
+      return failure();
+
+    auto fragT = spruce_gpu::FragmentType::get(ctx, ty);
     auto aFrag = spruce_gpu::CreateFragmentOp::create(rewriter, loc, fragT);
     auto bFrag = spruce_gpu::CreateFragmentOp::create(rewriter, loc, fragT);
     auto cFrag = spruce_gpu::CreateFragmentOp::create(rewriter, loc, fragT);

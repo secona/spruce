@@ -12,6 +12,14 @@ class SpruceGPU_Type<string name, list<Trait> traits = []>
 
 def SpruceGPU_FragmentType : SpruceGPU_Type<"Fragment"> {
   let mnemonic = "fragment";
+
+  // TODO: Support more than floating point types.
+  let parameters = (ins
+    "::mlir::FloatType":$element);
+
+  let assemblyFormat = [{
+    `<` $element `>`
+  }];
 }
 
 #endif

@@ -17,7 +17,7 @@ def SpruceGPU_CreateFragmentOp : SpruceGPU_Op<"create_fragment"> {
     SpruceGPU_FragmentType:$result);
 
   let assemblyFormat = [{
-    attr-dict `:` type($result)
+    attr-dict `:` qualified(type($result))
   }];
 }
 
@@ -33,7 +33,7 @@ def SpruceGPU_MmaLoadMatrixOp : SpruceGPU_Op<"mma.load_matrix"> {
   let assemblyFormat = [{
     $tensor `->` $fragment
     attr-dict
-    `:` type($tensor) `->` type($fragment)
+    `:` type($tensor) `->` qualified(type($fragment))
   }];
 }
 
@@ -55,7 +55,7 @@ def SpruceGPU_MmaStoreMatrixOp : SpruceGPU_Op<"mma.store_matrix", [
     $fragment
     `out` `(` $out `)`
     attr-dict
-    `:` type($fragment) `,` type($result)
+    `:` qualified(type($fragment)) `,` type($result)
   }];
 }
 
@@ -73,7 +73,8 @@ def SpruceGPU_MmaOp : SpruceGPU_Op<"mma"> {
   let assemblyFormat = [{
     $a `,` $b `,` $c `,` $d
     attr-dict
-    `:` type($a) `,` type($b) `,` type($c) `,` type($d)
+    `:` qualified(type($a)) `,` qualified(type($b)) `,`
+        qualified(type($c)) `,` qualified(type($d))
   }];
 }
 
