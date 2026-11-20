@@ -8,6 +8,9 @@
 // CHECK:         %[[B_FRAG:.*]] = spruce_gpu.create_fragment : !spruce_gpu.fragment
 // CHECK:         %[[C_FRAG:.*]] = spruce_gpu.create_fragment : !spruce_gpu.fragment
 // CHECK:         %[[D_FRAG:.*]] = spruce_gpu.create_fragment : !spruce_gpu.fragment
+// CHECK:         spruce_gpu.mma.load_matrix %[[A]] -> %[[A_FRAG]] : tensor<32x16xf32> -> !spruce_gpu.fragment
+// CHECK:         spruce_gpu.mma.load_matrix %[[B]] -> %[[B_FRAG]] : tensor<16x16xf32> -> !spruce_gpu.fragment
+// CHECK:         spruce_gpu.mma.load_matrix %[[C]] -> %[[C_FRAG]] : tensor<32x16xf32> -> !spruce_gpu.fragment
 // CHECK:         spruce_gpu.mma %[[D_FRAG]], %[[A_FRAG]], %[[B_FRAG]], %[[C_FRAG]] : !spruce_gpu.fragment, !spruce_gpu.fragment, !spruce_gpu.fragment, !spruce_gpu.fragment
 // CHECK:         %[[RESULT:.*]] = spruce_gpu.mma.store_matrix %[[D_FRAG]] out(%[[C]]) : !spruce_gpu.fragment, tensor<32x16xf32>
 // CHECK:         return %[[RESULT]] : tensor<32x16xf32>
