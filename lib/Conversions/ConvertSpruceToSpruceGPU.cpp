@@ -34,7 +34,9 @@ struct MmaOpConversion : OpRewritePattern<MmaOp> {
 
     spruce_gpu::MmaOp::create(rewriter, loc, dFrag, aFrag, bFrag, cFrag);
 
-    rewriter.replaceOp(op, op.getAcc());
+    auto result = spruce_gpu::MmaStoreMatrixOp::create(
+        rewriter, loc, op.getAcc().getType(), dFrag, op.getAcc());
+    rewriter.replaceOp(op, result);
     return success();
   }
 };
