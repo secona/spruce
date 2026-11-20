@@ -16,7 +16,7 @@ namespace {
 void buildPipeline(OpPassManager &pipeline) {
   auto &functions = pipeline.nest<func::FuncOp>();
   functions.addPass(createConvertLinalgToSpruce());
-  functions.addPass(createSpruceTileMma());
+  functions.addPass(createConvertSpruceToSpruceGPU());
   functions.addPass(createCanonicalizerPass());
   functions.addPass(createCSEPass());
 }
