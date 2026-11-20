@@ -5,6 +5,8 @@ Cores. The base of Spruce is the SparseTensor dialect in MLIR. Spruce takes a
 different approach to the upstream `-sparse-gpu-codegen` pass where its getting
 sparsity information from the sparse tensor expression.
 
+The main focus of Spruce is the `f16` type with static matrix sizes.
+
 ## How to Build
 
 ```sh
