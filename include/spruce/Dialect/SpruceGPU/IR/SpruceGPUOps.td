@@ -27,10 +27,13 @@ def SpruceGPU_CreateFragmentOp : SpruceGPU_Op<"create_fragment"> {
 
 def SpruceGPU_MmaLoadMatrixOp : SpruceGPU_Op<"mma.load_matrix"> {
   let arguments = (ins
+    AnyRankedTensor:$tensor,
     SpruceGPU_FragmentType:$fragment);
 
   let assemblyFormat = [{
-    $fragment attr-dict `:` type($fragment)
+    $tensor `->` $fragment
+    attr-dict
+    `:` type($tensor) `->` type($fragment)
   }];
 }
 
