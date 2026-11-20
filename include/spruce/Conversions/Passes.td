@@ -24,6 +24,14 @@ def ConvertSpruceToGPU : Pass<"convert-spruce-to-gpu", "::mlir::ModuleOp"> {
   ];
 }
 
+def ConvertSpruceToSpruceGPU : Pass<"convert-spruce-to-spruce-gpu"> {
+  let summary = "convert-spruce-to-spruce-gpu";
+  let dependentDialects = [
+    "::mlir::spruce_gpu::SpruceGPUDialect",
+    "::mlir::spruce::SpruceDialect"
+  ];
+}
+
 def ConvertSpruceToVector : Pass<"convert-spruce-to-vector", "::mlir::func::FuncOp"> {
   let summary = "convert-spruce-to-vector";
   let dependentDialects = ["::mlir::arith::ArithDialect", "::mlir::vector::VectorDialect"];

@@ -1,6 +1,7 @@
 add_mlir_library(SpruceConversions
   ConvertLinalgToSpruce.cpp
   ConvertSpruceToGPU.cpp
+  ConvertSpruceToSpruceGPU.cpp
   ConvertSpruceToVector.cpp
 
   DEPENDS
