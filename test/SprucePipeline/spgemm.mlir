@@ -1,17 +1,28 @@
 // RUN: spruce-opt -spruce-pipeline -verify-roundtrip %s | FileCheck %s
 
 // CHECK-LABEL: func.func @spgemm(
-// CHECK-SAME:    %arg0: tensor<64x64xf16>
-// CHECK-SAME:    %arg1: tensor<64x64xf16>
-// CHECK-SAME:  ) -> tensor<64x64xf16> {
-// CHECK:         %cst = arith.constant 0.000000e+00 : f16
-// CHECK:         %0 = tensor.empty() : tensor<64x64xf16>
-// CHECK:         %1 = linalg.fill ins(%cst : f16) outs(%0 : tensor<64x64xf16>) -> tensor<64x64xf16>
-// CHECK:         %2 = spruce.kernel(%arg2 = %arg0 : tensor<64x64xf16>, %arg3 = %arg1 : tensor<64x64xf16>, %arg4 = %1 : tensor<64x64xf16>) {
-// CHECK:           spruce.yield %arg4 : tensor<64x64xf16>
+// CHECK-SAME:    %[[A:[^:]+]]: tensor<64x64xf16>, %[[B:[^:]+]]: tensor<64x64xf16>) -> tensor<64x64xf16>
+// CHECK:         %[[ZERO:.*]] = arith.constant 0.000000e+00 : f16
+// CHECK:         %[[EMPTY:.*]] = tensor.empty() : tensor<64x64xf16>
+// CHECK:         %[[C:.*]] = linalg.fill ins(%[[ZERO]] : f16) outs(%[[EMPTY]] : tensor<64x64xf16>)
+// CHECK:         %[[RESULT:.*]] = spruce.kernel(%[[A_D:[^ ]+]] = %[[A]] : tensor<64x64xf16>, %[[B_D:[^ ]+]] = %[[B]] : tensor<64x64xf16>, %[[C_D:[^ ]+]] = %[[C]] : tensor<64x64xf16>) {
+// CHECK-DAG:       %[[START:.*]] = arith.constant 0 : index
+// CHECK-DAG:       %[[END:.*]] = arith.constant 64 : index
+// CHECK-DAG:       %[[STEP:.*]] = arith.constant 8 : index
+// CHECK:           %[[INIT:.*]] = tensor.extract_slice %[[C_D]][0, 0] [16, 8] [1, 1]
+// CHECK:           %[[TILE:.*]] = scf.for %[[K:[^ ]+]] = %[[START]] to %[[END]] step %[[STEP]] iter_args(%[[ACC:[^ ]+]] = %[[INIT]]) -> (tensor<16x8xf16>) {
+// CHECK:             %[[LHS:.*]] = tensor.extract_slice %[[A_D]][0, %[[K]]] [16, 8] [1, 1]
+// CHECK:             %[[RHS:.*]] = tensor.extract_slice %[[B_D]][%[[K]], 0] [8, 8] [1, 1]
+// CHECK:             spruce_gpu.mma.load_matrix %[[LHS]] -> %[[AF:[^ ]+]]
+// CHECK:             spruce_gpu.mma.load_matrix %[[RHS]] -> %[[BF:[^ ]+]]
+// CHECK:             spruce_gpu.mma.load_matrix %[[ACC]] -> %[[CF:[^ ]+]]
+// CHECK:             spruce_gpu.mma %[[DF:[^,]+]], %[[AF]], %[[BF]], %[[CF]]
+// CHECK:             %[[SUM:.*]] = spruce_gpu.mma.store_matrix %[[DF]] out(%[[ACC]])
+// CHECK:             scf.yield %[[SUM]] : tensor<16x8xf16>
+// CHECK:           %[[OUT:.*]] = tensor.insert_slice %[[TILE]] into %[[C_D]][0, 0] [16, 8] [1, 1]
+// CHECK:           spruce.yield %[[OUT]] : tensor<64x64xf16>
 // CHECK:         } -> (tensor<64x64xf16>) {spruce.target = #target}
-// CHECK:         return %2 : tensor<64x64xf16>
-// CHECK:       }
+// CHECK:         return %[[RESULT]] : tensor<64x64xf16>
 
 func.func @spgemm(
   %A: tensor<64x64xf16>,

@@ -69,6 +69,15 @@ def Spruce_DimMaskAttr : Spruce_Attr<"DimMask"> {
   let assemblyFormat = [{
     `<` $size `,` $words `>`
   }];
+
+  let extraClassDeclaration = [{
+    ::llvm::Bitset<2048> getBitsetMap() {
+      std::array<uint64_t, llvm::Bitset<2048>::getNumWords64()> words{};
+      auto packed = getWords().asArrayRef();
+      llvm::copy(packed, words.begin());
+      return llvm::Bitset<2048>(words);
+    }
+  }];
 }
 
 // -----------------------------------------------------------------------------
