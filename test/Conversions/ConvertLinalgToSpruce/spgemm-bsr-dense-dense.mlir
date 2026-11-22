@@ -1,3 +1,4 @@
+// REQUIRES: enable-spgemm-bsr-dense-dense
 // RUN: spruce-opt -convert-linalg-to-spruce -verify-roundtrip %s | FileCheck %s
 
 // CHECK-DAG: #[[TARGET:.*]] = #spruce.target<{m = 16, n = 8, k = 8}>
