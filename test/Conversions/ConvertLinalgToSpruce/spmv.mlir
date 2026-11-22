@@ -1,3 +1,4 @@
+// REQUIRES: enable-spmv
 // RUN: spruce-opt -split-input-file -convert-linalg-to-spruce -canonicalize -cse %s | FileCheck %s
 
 // CHECK: #[[CSR:.*]] = #sparse_tensor.encoding

@@ -1,3 +1,4 @@
+// REQUIRES: enable-spgemm-bsr-dense-dense
 // RUN: spruce-opt -spruce-pipeline -verify-roundtrip %s | FileCheck %s
 
 // CHECK-DAG: #[[BSR:.*]] = #sparse_tensor.encoding<{ map = (d0, d1) -> (d0 floordiv 16 : dense, d1 floordiv 8 : compressed, d0 mod 16 : dense, d1 mod 8 : dense) }>
