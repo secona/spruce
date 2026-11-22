@@ -1,0 +1,100 @@
+#include "adlet/graph.hpp"
+#include "llvm/Support/JSON.h"
+#include "llvm/Support/raw_ostream.h"
+#include "muopt/muopt.hpp"
+#include <algorithm>
+#include <memory>
+#include <stdexcept>
+#include <string>
+#include <string_view>
+#include <taco/tensor.h>
+#include <vector>
+
+using namespace llvm;
+
+std::pair<std::string, std::string> splitEquals(const std::string &s) {
+  auto pos = s.find("=");
+  if (pos == std::string::npos)
+    throw std::invalid_argument(s);
+  return {s.substr(0, pos), s.substr(pos + 1)};
+}
+
+std::shared_ptr<Tensor> loadTensor(const std::string &s) {
+  auto [name, path] = splitEquals(s);
+
+  taco::Tensor<double> matrix(taco::read(path, taco::Sparse));
+  const std::vector<int> &shape = matrix.getDimensions();
+
+  std::vector<SparsityVector> sparsities(2);
+  for (const auto &[crd, v] : matrix) {
+    if (v == 0.0)
+      continue;
+    sparsities[0].set(crd[0]);
+    sparsities[1].set(crd[1]);
+  }
+
+  return std::make_shared<Tensor>(shape, sparsities, name);
+}
+
+json::Array activeIndices(const SparsityVector &mask, int extent) {
+  json::Array indices;
+  for (int i = 0; i < extent; ++i) {
+    if (mask.test(i))
+      indices.push_back(i);
+  }
+  return indices;
+}
+
+struct SpaExporterOptions {
+  std::string einsum;
+  std::vector<std::string> inputs;
+
+  static SpaExporterOptions parse(int argc, char **argv) {
+    if (argc == 1)
+      throw std::invalid_argument("not enough arguments");
+
+    std::vector<std::string_view> args;
+    muopt::Parser parser(argc, argv);
+    while (muopt::Arg arg = parser.next()) {
+      if (arg.is_plain()) {
+        args.push_back(arg.as_str());
+        continue;
+      }
+
+      throw std::invalid_argument(std::string(arg.as_str()));
+    }
+
+    std::string einsum(args.front());
+    std::vector<std::string> inputs(std::next(args.begin()), args.end());
+
+    return {einsum, inputs};
+  }
+};
+
+int main(int argc, char **argv) {
+  auto opt = SpaExporterOptions::parse(argc, argv);
+
+  std::vector<std::shared_ptr<Tensor>> inputs(opt.inputs.size());
+  std::transform(opt.inputs.begin(), opt.inputs.end(), inputs.begin(),
+                 loadTensor);
+
+  // TODO: Implement more than just this matrix size.
+  auto rows = inputs[0]->sizes[0];
+  auto cols = inputs[1]->sizes[1];
+  std::shared_ptr<Tensor> out = std::make_shared<Tensor>(
+      std::vector<int>{rows, cols}, "out");
+
+  auto einsum = std::make_shared<Einsum>(inputs, out, opt.einsum);
+
+  auto graph = Graph::build_graph(inputs, out, {einsum});
+  graph.run_propagation();
+
+  json::Value result(json::Object{
+      {"shape", json::Array{rows, cols}},
+      {"active_rows", activeIndices(out->sparsities[0], rows)},
+      {"active_cols", activeIndices(out->sparsities[1], cols)},
+  });
+  outs() << result << '\n';
+
+  return 0;
+}
