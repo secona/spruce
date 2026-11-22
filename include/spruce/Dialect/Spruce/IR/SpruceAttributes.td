@@ -54,4 +54,37 @@ def Spruce_EncodingAttr : Spruce_Attr<"Encoding", [
   }];
 }
 
+// -----------------------------------------------------------------------------
+// DimMaskAttr
+// -----------------------------------------------------------------------------
+
+def Spruce_DimMaskAttr : Spruce_Attr<"DimMask"> {
+  let mnemonic = "dim_mask";
+  let genMnemonicAlias = 1;
+
+  let parameters = (ins
+    "uint64_t":$size,
+    "::mlir::DenseI64ArrayAttr":$words);
+
+  let assemblyFormat = [{
+    `<` $size `,` $words `>`
+  }];
+}
+
+// -----------------------------------------------------------------------------
+// SparsityAttr
+// -----------------------------------------------------------------------------
+
+def Spruce_SparsityAttr : Spruce_Attr<"Sparsity"> {
+  let mnemonic = "sparsity";
+  let genMnemonicAlias = 1;
+
+  let parameters = (ins
+    ArrayRefParameter<"::mlir::spruce::DimMaskAttr">:$dims);
+
+  let assemblyFormat = [{
+    `<` `[` $dims `]` `>`
+  }];
+}
+
 #endif
