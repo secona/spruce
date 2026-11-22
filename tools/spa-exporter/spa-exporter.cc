@@ -1,8 +1,9 @@
 #include "adlet/graph.hpp"
+#include "muopt/muopt.hpp"
 #include "llvm/Support/JSON.h"
 #include "llvm/Support/raw_ostream.h"
-#include "muopt/muopt.hpp"
 #include <algorithm>
+#include <cstdint>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -36,13 +37,26 @@ std::shared_ptr<Tensor> loadTensor(const std::string &s) {
   return std::make_shared<Tensor>(shape, sparsities, name);
 }
 
-json::Array activeIndices(const SparsityVector &mask, int extent) {
-  json::Array indices;
-  for (int i = 0; i < extent; ++i) {
-    if (mask.test(i))
-      indices.push_back(i);
+constexpr std::int64_t chunkSize = 64;
+
+json::Array chunkBitsToWords(const SparsityVector &mask, int extent) {
+  json::Array out;
+
+  const size_t numChunks = (extent + chunkSize - 1) / chunkSize;
+  for (size_t c = 0; c < numChunks; c++) {
+    const size_t offset = c * chunkSize;
+    const size_t numBits = std::min<size_t>(chunkSize, extent - offset);
+
+    uint64_t bits = 0;
+    for (size_t i = 0; i < numBits; i++) {
+      if (mask.test(offset + i))
+        bits |= uint64_t{1} << i;
+    }
+
+    out.push_back(bits);
   }
-  return indices;
+
+  return out;
 }
 
 struct SpaExporterOptions {
@@ -81,18 +95,19 @@ int main(int argc, char **argv) {
   // TODO: Implement more than just this matrix size.
   auto rows = inputs[0]->sizes[0];
   auto cols = inputs[1]->sizes[1];
-  std::shared_ptr<Tensor> out = std::make_shared<Tensor>(
-      std::vector<int>{rows, cols}, "out");
+  std::shared_ptr<Tensor> out =
+      std::make_shared<Tensor>(std::vector<int>{rows, cols}, "out");
 
   auto einsum = std::make_shared<Einsum>(inputs, out, opt.einsum);
 
   auto graph = Graph::build_graph(inputs, out, {einsum});
   graph.run_propagation();
 
-  json::Value result(json::Object{
-      {"shape", json::Array{rows, cols}},
-      {"active_rows", activeIndices(out->sparsities[0], rows)},
-      {"active_cols", activeIndices(out->sparsities[1], cols)},
+  json::Value result(json::Array{
+      json::Object{{"size", rows},
+                   {"words", chunkBitsToWords(out->sparsities[0], rows)}},
+      json::Object{{"size", cols},
+                   {"words", chunkBitsToWords(out->sparsities[1], cols)}},
   });
   outs() << result << '\n';
 
