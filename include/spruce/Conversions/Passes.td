@@ -14,6 +14,11 @@ def ConvertLinalgToSpruce : Pass<"convert-linalg-to-spruce", "::mlir::func::Func
   ];
 }
 
+def ConvertSpruceGPUToNVGPU : Pass<"convert-spruce-gpu-to-nvgpu"> {
+  let summary = "Lower SpruceGPU operations to NVGPU (skeleton)";
+  let dependentDialects = ["::mlir::nvgpu::NVGPUDialect"];
+}
+
 def ConvertSpruceToGPU : Pass<"convert-spruce-to-gpu", "::mlir::ModuleOp"> {
   let summary = "convert-spruce-to-gpu";
   let dependentDialects = [
