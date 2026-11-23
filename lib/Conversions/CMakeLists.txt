@@ -1,6 +1,7 @@
 add_mlir_library(SpruceConversions
   ConvertLinalgToSpruce.cpp
   ConvertSpruceGPUToNVGPU.cpp
+  ConvertSpruceGPUToNVVM.cpp
   ConvertSpruceToGPU.cpp
   ConvertSpruceToSpruceGPU.cpp
   ConvertSpruceToVector.cpp
@@ -15,6 +16,8 @@ add_mlir_library(SpruceConversions
   MLIRGPUDialect
   MLIRLinalgDialect
   MLIRMemRefDialect
+  MLIRNVGPUDialect
+  MLIRNVVMDialect
   MLIRPass
   MLIRSCFDialect
   MLIRSparseTensorDialect

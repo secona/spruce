@@ -19,6 +19,11 @@ def ConvertSpruceGPUToNVGPU : Pass<"convert-spruce-gpu-to-nvgpu"> {
   let dependentDialects = ["::mlir::nvgpu::NVGPUDialect"];
 }
 
+def ConvertSpruceGPUToNVVM : Pass<"convert-spruce-gpu-to-nvvm"> {
+  let summary = "Lower SpruceGPU operations to NVVM (skeleton)";
+  let dependentDialects = ["::mlir::NVVM::NVVMDialect"];
+}
+
 def ConvertSpruceToGPU : Pass<"convert-spruce-to-gpu", "::mlir::ModuleOp"> {
   let summary = "convert-spruce-to-gpu";
   let dependentDialects = [
