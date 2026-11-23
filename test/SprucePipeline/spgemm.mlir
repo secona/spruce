@@ -17,7 +17,7 @@
 // CHECK:             %[[BF:.*]] = spruce_gpu.mma.load_matrix %[[RHS]] -> %{{.*}}
 // CHECK:             %[[CF:.*]] = spruce_gpu.mma.load_matrix %[[ACC]] -> %{{.*}}
 // CHECK:             %[[DF:.*]] = spruce_gpu.mma %[[AF]], %[[BF]], %[[CF]] -> %{{[^,]+}}
-// CHECK:             %[[SUM:.*]] = spruce_gpu.mma.store_matrix %[[DF]] out(%[[ACC]])
+// CHECK:             %[[SUM:.*]] = spruce_gpu.mma.store_matrix %[[DF]] -> %[[ACC]]
 // CHECK:             scf.yield %[[SUM]] : tensor<16x8xf16>
 // CHECK:           %[[OUT:.*]] = tensor.insert_slice %[[TILE]] into %[[C_D]][0, 0] [16, 8] [1, 1]
 // CHECK:           spruce.yield %[[OUT]] : tensor<64x64xf16>

@@ -57,10 +57,9 @@ def SpruceGPU_MmaStoreMatrixOp : SpruceGPU_Op<"mma.store_matrix", [
     AnyRankedTensor:$result);
 
   let assemblyFormat = [{
-    $fragment
-    `out` `(` $out `)`
+    $fragment `->` $out
     attr-dict
-    `:` qualified(type($fragment)) `,` type($result)
+    `:` qualified(type($fragment)) `->` type($result)
   }];
 }
 
