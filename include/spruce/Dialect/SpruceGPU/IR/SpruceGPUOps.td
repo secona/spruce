@@ -68,21 +68,22 @@ def SpruceGPU_MmaStoreMatrixOp : SpruceGPU_Op<"mma.store_matrix", [
 // MmaOp
 // -----------------------------------------------------------------------------
 
-def SpruceGPU_MmaOp : SpruceGPU_Op<"mma"> {
+def SpruceGPU_MmaOp : SpruceGPU_Op<"mma", [
+  AllTypesMatch<["d", "result"]>
+]> {
   let arguments = (ins
+    SpruceGPU_FragmentType:$d,
     SpruceGPU_FragmentType:$a,
     SpruceGPU_FragmentType:$b,
-    SpruceGPU_FragmentType:$c,
-    SpruceGPU_FragmentType:$d);
+    SpruceGPU_FragmentType:$c);
 
   let results = (outs
     SpruceGPU_FragmentType:$result);
 
   let assemblyFormat = [{
-    $a `,` $b `,` $c `,` $d
+    $a `,` $b `,` $c `->` $d
     attr-dict
-    `:` qualified(type($a)) `,` qualified(type($b)) `,`
-        qualified(type($c)) `,` qualified(type($d))
+    `:` qualified(type($a)) `,` qualified(type($b)) `,` qualified(type($c))
     `->` qualified(type($result))
   }];
 }
