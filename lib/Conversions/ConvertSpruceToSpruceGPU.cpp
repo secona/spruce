@@ -32,14 +32,14 @@ struct MmaOpConversion : OpRewritePattern<MmaOp> {
       return failure();
 
     auto fragT = spruce_gpu::FragmentType::get(ctx, ty);
-    auto aFrag = spruce_gpu::CreateFragmentOp::create(rewriter, loc, fragT);
-    auto bFrag = spruce_gpu::CreateFragmentOp::create(rewriter, loc, fragT);
-    auto cFrag = spruce_gpu::CreateFragmentOp::create(rewriter, loc, fragT);
+    auto aFragInit = spruce_gpu::CreateFragmentOp::create(rewriter, loc, fragT);
+    auto bFragInit = spruce_gpu::CreateFragmentOp::create(rewriter, loc, fragT);
+    auto cFragInit = spruce_gpu::CreateFragmentOp::create(rewriter, loc, fragT);
     auto dFrag = spruce_gpu::CreateFragmentOp::create(rewriter, loc, fragT);
 
-    spruce_gpu::MmaLoadMatrixOp::create(rewriter, loc, op.getLhs(), aFrag);
-    spruce_gpu::MmaLoadMatrixOp::create(rewriter, loc, op.getRhs(), bFrag);
-    spruce_gpu::MmaLoadMatrixOp::create(rewriter, loc, op.getAcc(), cFrag);
+    auto aFrag = spruce_gpu::MmaLoadMatrixOp::create(rewriter, loc, fragT, op.getLhs(), aFragInit);
+    auto bFrag = spruce_gpu::MmaLoadMatrixOp::create(rewriter, loc, fragT, op.getRhs(), bFragInit);
+    auto cFrag = spruce_gpu::MmaLoadMatrixOp::create(rewriter, loc, fragT, op.getAcc(), cFragInit);
     // TODO: Maybe initialize dFrag to zeros?
 
     spruce_gpu::MmaOp::create(rewriter, loc, dFrag, aFrag, bFrag, cFrag);

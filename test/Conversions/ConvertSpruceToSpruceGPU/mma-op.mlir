@@ -8,15 +8,15 @@
 // CHECK-SAME:        %[[A:[^:]+]] = %[[A_H]] : tensor<32x16xf16>
 // CHECK-SAME:        %[[B:[^:]+]] = %[[B_H]] : tensor<16x16xf16>
 // CHECK-SAME:        %[[C:[^:]+]] = %[[C_H]] : tensor<32x16xf16>
-// CHECK:           %[[A_FRAG:.*]] = spruce_gpu.create_fragment : !spruce_gpu.fragment<f16>
-// CHECK:           %[[B_FRAG:.*]] = spruce_gpu.create_fragment : !spruce_gpu.fragment<f16>
-// CHECK:           %[[C_FRAG:.*]] = spruce_gpu.create_fragment : !spruce_gpu.fragment<f16>
-// CHECK:           %[[D_FRAG:.*]] = spruce_gpu.create_fragment : !spruce_gpu.fragment<f16>
-// CHECK:           spruce_gpu.mma.load_matrix %[[A]] -> %[[A_FRAG]] : tensor<32x16xf16> -> !spruce_gpu.fragment<f16>
-// CHECK:           spruce_gpu.mma.load_matrix %[[B]] -> %[[B_FRAG]] : tensor<16x16xf16> -> !spruce_gpu.fragment<f16>
-// CHECK:           spruce_gpu.mma.load_matrix %[[C]] -> %[[C_FRAG]] : tensor<32x16xf16> -> !spruce_gpu.fragment<f16>
-// CHECK:           spruce_gpu.mma %[[D_FRAG]], %[[A_FRAG]], %[[B_FRAG]], %[[C_FRAG]] : !spruce_gpu.fragment<f16>, !spruce_gpu.fragment<f16>, !spruce_gpu.fragment<f16>, !spruce_gpu.fragment<f16>
-// CHECK:           %[[KRESULT:.*]] = spruce_gpu.mma.store_matrix %[[D_FRAG]] out(%[[C]]) : !spruce_gpu.fragment<f16>, tensor<32x16xf16>
+// CHECK:           %[[AF_INIT:.*]] = spruce_gpu.create_fragment : !spruce_gpu.fragment<f16>
+// CHECK:           %[[BF_INIT:.*]] = spruce_gpu.create_fragment : !spruce_gpu.fragment<f16>
+// CHECK:           %[[CF_INIT:.*]] = spruce_gpu.create_fragment : !spruce_gpu.fragment<f16>
+// CHECK:           %[[DF_INIT:.*]] = spruce_gpu.create_fragment : !spruce_gpu.fragment<f16>
+// CHECK:           %[[AF:.*]] = spruce_gpu.mma.load_matrix %[[A]] -> %[[AF_INIT]] : tensor<32x16xf16> -> !spruce_gpu.fragment<f16>
+// CHECK:           %[[BF:.*]] = spruce_gpu.mma.load_matrix %[[B]] -> %[[BF_INIT]] : tensor<16x16xf16> -> !spruce_gpu.fragment<f16>
+// CHECK:           %[[CF:.*]] = spruce_gpu.mma.load_matrix %[[C]] -> %[[CF_INIT]] : tensor<32x16xf16> -> !spruce_gpu.fragment<f16>
+// CHECK:           spruce_gpu.mma %[[DF_INIT]], %[[AF]], %[[BF]], %[[CF]] : !spruce_gpu.fragment<f16>, !spruce_gpu.fragment<f16>, !spruce_gpu.fragment<f16>, !spruce_gpu.fragment<f16>
+// CHECK:           %[[KRESULT:.*]] = spruce_gpu.mma.store_matrix %[[DF_INIT]] out(%[[C]]) : !spruce_gpu.fragment<f16>, tensor<32x16xf16>
 // CHECK:           spruce.yield %[[KRESULT]] : tensor<32x16xf16>
 // CHECK:         return %[[RESULT]] : tensor<32x16xf16>
 
