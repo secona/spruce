@@ -75,11 +75,15 @@ def SpruceGPU_MmaOp : SpruceGPU_Op<"mma"> {
     SpruceGPU_FragmentType:$c,
     SpruceGPU_FragmentType:$d);
 
+  let results = (outs
+    SpruceGPU_FragmentType:$result);
+
   let assemblyFormat = [{
     $a `,` $b `,` $c `,` $d
     attr-dict
     `:` qualified(type($a)) `,` qualified(type($b)) `,`
         qualified(type($c)) `,` qualified(type($d))
+    `->` qualified(type($result))
   }];
 }
 

@@ -35,14 +35,14 @@ struct MmaOpConversion : OpRewritePattern<MmaOp> {
     auto aFragInit = spruce_gpu::CreateFragmentOp::create(rewriter, loc, fragT);
     auto bFragInit = spruce_gpu::CreateFragmentOp::create(rewriter, loc, fragT);
     auto cFragInit = spruce_gpu::CreateFragmentOp::create(rewriter, loc, fragT);
-    auto dFrag = spruce_gpu::CreateFragmentOp::create(rewriter, loc, fragT);
+    auto dFragInit = spruce_gpu::CreateFragmentOp::create(rewriter, loc, fragT);
 
     auto aFrag = spruce_gpu::MmaLoadMatrixOp::create(rewriter, loc, fragT, op.getLhs(), aFragInit);
     auto bFrag = spruce_gpu::MmaLoadMatrixOp::create(rewriter, loc, fragT, op.getRhs(), bFragInit);
     auto cFrag = spruce_gpu::MmaLoadMatrixOp::create(rewriter, loc, fragT, op.getAcc(), cFragInit);
     // TODO: Maybe initialize dFrag to zeros?
 
-    spruce_gpu::MmaOp::create(rewriter, loc, dFrag, aFrag, bFrag, cFrag);
+    auto dFrag = spruce_gpu::MmaOp::create(rewriter, loc, fragT, dFragInit, aFrag, bFrag, cFrag);
 
     auto result = spruce_gpu::MmaStoreMatrixOp::create(
         rewriter, loc, op.getAcc().getType(), dFrag, op.getAcc());
