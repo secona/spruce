@@ -26,6 +26,9 @@ def ConvertSpruceGPUToNVVM : Pass<"convert-spruce-gpu-to-nvvm"> {
 
 def ConvertSpruceToGPU : Pass<"convert-spruce-to-gpu", "::mlir::ModuleOp"> {
   let summary = "convert-spruce-to-gpu";
+  let options = [
+    Option<"mmaTarget", "target", "std::string", "\"mma\"", "">
+  ];
   let dependentDialects = [
     "::mlir::arith::ArithDialect",
     "::mlir::func::FuncDialect",

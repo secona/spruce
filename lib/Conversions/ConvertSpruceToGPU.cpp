@@ -15,7 +15,8 @@ namespace mlir::spruce {
 namespace {
 
 struct MmaOpConversion : OpRewritePattern<MmaOp> {
-  using Base::Base;
+  MmaOpConversion(MLIRContext *context, bool useWmma)
+      : OpRewritePattern<MmaOp>(context), useWmma(useWmma) {}
 
   LogicalResult matchAndRewrite(MmaOp op,
                                 PatternRewriter &rewriter) const override {
@@ -40,34 +41,48 @@ struct MmaOpConversion : OpRewritePattern<MmaOp> {
 
     // Eight lanes copy one row, so the warp covers four rows per step.
     // Scalar copies respect dynamic strides on the incoming subviews.
-    auto copyTile = [&](Value source, Value dest) {
-      int64_t rows = cast<MemRefType>(source.getType()).getDimSize(0);
+    auto forEachRow = [&](int64_t rows, auto visit) {
       Value row = firstRow;
       for (int64_t i = 0; i < rows; i += 4) {
         if (i) {
           Value offset = arith::ConstantIndexOp::create(rewriter, loc, i);
           row = arith::AddIOp::create(rewriter, loc, firstRow, offset);
         }
-        Value value =
-            memref::LoadOp::create(rewriter, loc, source, ValueRange{row, col});
-        memref::StoreOp::create(rewriter, loc, value, dest,
-                                ValueRange{row, col});
+        visit(i, row);
       }
     };
 
     // The subgroup load/store ops need unit inner stride and a static
     // leading dimension. Stage C as well as A/B to support strided C tiles.
+    constexpr int64_t wmmaShape[] = {16, 16};
+    Value pad, upperCol;
+    if (useWmma) {
+      pad =
+          arith::ConstantOp::create(rewriter, loc, rewriter.getF16FloatAttr(0));
+      upperCol = arith::AddIOp::create(rewriter, loc, col, width);
+    }
     auto stage = [&](Value source) {
       auto type = cast<MemRefType>(source.getType());
       auto space = gpu::AddressSpaceAttr::get(op.getContext(),
                                               gpu::AddressSpace::Workgroup);
-      auto sharedType = MemRefType::get(type.getShape(), type.getElementType(),
+      auto shape = useWmma ? ArrayRef<int64_t>(wmmaShape) : type.getShape();
+      auto sharedType = MemRefType::get(shape, type.getElementType(),
                                         MemRefLayoutAttrInterface{}, space);
       Value shared;
       rewriter.modifyOpInPlace(launch, [&] {
         shared = launch.addWorkgroupAttribution(sharedType, loc);
       });
-      copyTile(source, shared);
+      forEachRow(shape[0], [&](int64_t rowBase, Value row) {
+        Value value = pad;
+        if (rowBase < type.getDimSize(0))
+          value = memref::LoadOp::create(rewriter, loc, source,
+                                         ValueRange{row, col});
+        memref::StoreOp::create(rewriter, loc, value, shared,
+                                ValueRange{row, col});
+        if (useWmma)
+          memref::StoreOp::create(rewriter, loc, pad, shared,
+                                  ValueRange{row, upperCol});
+      });
       return shared;
     };
     Value sharedA = stage(op.getLhs());
@@ -89,14 +104,23 @@ struct MmaOpConversion : OpRewritePattern<MmaOp> {
     Value c = load(sharedC, "COp");
     Value sum = gpu::SubgroupMmaComputeOp::create(rewriter, loc, c.getType(), a,
                                                   b, c, UnitAttr(), UnitAttr());
-    gpu::SubgroupMmaStoreMatrixOp::create(rewriter, loc, sum, sharedC,
-                                          ValueRange{zero, zero},
-                                          rewriter.getIndexAttr(8), UnitAttr());
+    auto accType = cast<MemRefType>(sharedC.getType());
+    gpu::SubgroupMmaStoreMatrixOp::create(
+        rewriter, loc, sum, sharedC, ValueRange{zero, zero},
+        rewriter.getIndexAttr(accType.getDimSize(1)), UnitAttr());
     gpu::BarrierOp::create(rewriter, loc);
-    copyTile(sharedC, op.getAcc());
+    forEachRow(op.getM(), [&](int64_t, Value row) {
+      Value value =
+          memref::LoadOp::create(rewriter, loc, sharedC, ValueRange{row, col});
+      memref::StoreOp::create(rewriter, loc, value, op.getAcc(),
+                              ValueRange{row, col});
+    });
     rewriter.eraseOp(op);
     return success();
   }
+
+private:
+  bool useWmma;
 };
 
 struct KernelOpConversion : OpRewritePattern<KernelOp> {
@@ -155,7 +179,9 @@ struct ConvertSpruceToGPU : impl::ConvertSpruceToGPUBase<ConvertSpruceToGPU> {
     target.addIllegalOp<KernelOp, MmaOp, YieldOp>();
 
     RewritePatternSet patterns(&getContext());
-    patterns.add<KernelOpConversion, MmaOpConversion>(&getContext());
+    patterns.add<KernelOpConversion>(&getContext());
+    patterns.add<MmaOpConversion>(&getContext(),
+                                  mmaTarget.getValue() == "wmma");
 
     if (applyPartialConversion(getOperation(), target, std::move(patterns))
             .failed())
