@@ -16,7 +16,7 @@ int main(int argc, char **argv) {
   mlir::registerAllPasses();
   mlir::spruce::registerSpruceConversionsPasses();
   mlir::spruce::registerSpruceTransformsPasses();
-  mlir::spruce::registerSprucePipelinesPasses();
+  mlir::spruce::registerSprucePipeline();
 
   mlir::DialectRegistry registry;
   registry.insert<mlir::spruce::SpruceDialect,
