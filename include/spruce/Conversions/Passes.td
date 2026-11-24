@@ -30,6 +30,7 @@ def ConvertSpruceToGPU : Pass<"convert-spruce-to-gpu", "::mlir::ModuleOp"> {
     "::mlir::arith::ArithDialect",
     "::mlir::func::FuncDialect",
     "::mlir::gpu::GPUDialect",
+    "::mlir::memref::MemRefDialect",
     "::mlir::spruce::SpruceDialect"
   ];
 }
