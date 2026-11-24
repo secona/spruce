@@ -69,9 +69,21 @@ Value buildActiveTiles(OpBuilder &builder, Location loc, Value lhs, Value rhs,
             Value rhsTile = b.createOrFold<tensor::ExtractSliceOp>(
                 loc, rhs, ArrayRef<OpFoldResult>{reduction, offsets[1]},
                 rhsSize, strides);
-            Value sum = MmaOp::create(b, loc, acc.getType(), lhsTile, rhsTile,
-                                      iterArgs.front());
-            scf::YieldOp::create(b, loc, sum);
+            auto kernel = KernelOp::create(
+                b, loc, TypeRange{acc.getType()},
+                ValueRange{lhsTile, rhsTile, iterArgs.front()});
+            kernel->setAttr("spruce.target", target);
+            {
+              OpBuilder::InsertionGuard guard(b);
+              Block *body = b.createBlock(
+                  &kernel.getBody(), {}, kernel->getOperandTypes(),
+                  SmallVector<Location>(kernel.getNumOperands(), loc));
+              Value sum =
+                  MmaOp::create(b, loc, acc.getType(), body->getArgument(0),
+                                body->getArgument(1), body->getArgument(2));
+              YieldOp::create(b, loc, sum);
+            }
+            scf::YieldOp::create(b, loc, kernel.getResult(0));
           });
       result = builder.createOrFold<tensor::InsertSliceOp>(
           loc, loop.getResult(0), result, offsets, accSize, strides);
@@ -119,30 +131,8 @@ struct LinalgGenericLowering : OpRewritePattern<linalg::GenericOp> {
     auto rows = getActiveTileOffsets(dims[0], m, target.getM());
     auto cols = getActiveTileOffsets(dims[1], n, target.getN());
 
-    Location loc = op.getLoc();
-    Value result;
-
-    {
-      OpBuilder::InsertionGuard guard(rewriter);
-
-      // Create spruce.kernel while retaining the target.
-      auto kernel = spruce::KernelOp::create(rewriter, loc, TypeRange{cT},
-                                             ValueRange{a, b, c});
-      kernel->setAttr("spruce.target", target);
-
-      // Create the mandatory first block of spruce.kernel.
-      Block *body = rewriter.createBlock(
-          &kernel.getBody(), {}, kernel->getOperandTypes(),
-          SmallVector<Location>(kernel.getNumOperands(), loc));
-
-      Value output = buildActiveTiles(
-          rewriter, loc, body->getArgument(0), body->getArgument(1),
-          body->getArgument(2), *rows, *cols, k, target);
-      spruce::YieldOp::create(rewriter, loc, output);
-
-      result = kernel.getResult(0);
-    }
-
+    Value result = buildActiveTiles(rewriter, op.getLoc(), a, b, c, *rows,
+                                    *cols, k, target);
     rewriter.replaceOp(op, result);
     return success();
   }
