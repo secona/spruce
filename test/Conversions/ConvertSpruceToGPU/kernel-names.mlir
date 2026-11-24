@@ -1,3 +1,4 @@
+// REQUIRES: enable-kernel-names
 // RUN: spruce-opt -convert-spruce-to-gpu -verify-roundtrip %s | FileCheck %s --implicit-check-not=spruce.kernel --implicit-check-not=spruce.yield
 
 // CHECK:       module attributes {gpu.container_module} {

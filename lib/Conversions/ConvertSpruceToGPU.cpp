@@ -1,9 +1,11 @@
 #include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/GPU/IR/GPUDialect.h"
+#include "mlir/Dialect/GPU/IR/GPUDialectDecl.h"
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/IR/PatternMatch.h"
 
+#include "mlir/Transforms/DialectConversion.h"
 #include "spruce/Dialect/Spruce/IR/SpruceDialect.h"
 #include "spruce/Conversions/Passes.h"
 
@@ -53,47 +55,28 @@ void outlineKernel(KernelOp op, gpu::GPUModuleOp gpuModule,
       op, function, dimensions, dimensions, Value(), op.getInputs());
 }
 
+struct MmaOpConversion : OpRewritePattern<MmaOp> {
+  using Base::Base;
+
+  LogicalResult matchAndRewrite(MmaOp op,
+                                PatternRewriter &rewriter) const override {
+    return failure();
+  }
+};
+
 struct ConvertSpruceToGPU : impl::ConvertSpruceToGPUBase<ConvertSpruceToGPU> {
   using Base::Base;
 
   void runOnOperation() override {
-    ModuleOp module = getOperation();
-    IRRewriter rewriter(&getContext());
+    ConversionTarget target(getContext());
+    target.addLegalDialect<gpu::GPUDialect>();
 
-    // Find every funcs in the current module.
-    for (auto host : module.getOps<func::FuncOp>()) {
-      // Find all spruce.kernel ops.
-      SmallVector<KernelOp> kernels;
-      host.walk([&](KernelOp op) { kernels.push_back(op); });
-      if (kernels.empty())
-        continue;
+    RewritePatternSet patterns(&getContext());
+    patterns.add<MmaOpConversion>(&getContext());
 
-      // Rejects spruce.kernel operations that return values.
-      for (KernelOp op : kernels) {
-        if (op.getNumResults() != 0) {
-          op.emitOpError("GPU entry functions must return void");
-          signalPassFailure();
-          return;
-        }
-      }
-
-      module->setAttr(gpu::GPUDialect::getContainerModuleAttrName(),
-                      rewriter.getUnitAttr());
-
-      // Create the gpu.module op.
-      std::string hostName = host.getSymName().str();
-      rewriter.setInsertionPoint(host);
-      auto gpuModule =
-          gpu::GPUModuleOp::create(rewriter, host.getLoc(), hostName + "_gpu");
-
-      // Outline the kernels into the newly created gpu.module op.
-      unsigned number = 0;
-      for (KernelOp op : kernels) {
-        std::string kernelName =
-            hostName + "_kernel" + std::to_string(number++);
-        outlineKernel(op, gpuModule, kernelName, rewriter);
-      }
-    }
+    if (applyPartialConversion(getOperation(), target, std::move(patterns))
+          .failed())
+      return signalPassFailure();
   }
 };
 
