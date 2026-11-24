@@ -3,6 +3,7 @@
 
 include "spruce/Dialect/Spruce/IR/SpruceDialect.td"
 include "mlir/IR/OpBase.td"
+include "mlir/Interfaces/SideEffectInterfaces.td"
 
 // spruce ops should be designed as sparse-aware ops.
 class Spruce_Op<string mnemonic, list<Trait> traits = []>
@@ -62,27 +63,32 @@ def Spruce_YieldOp : Spruce_Op<"yield", [
 // MmaOp
 // -----------------------------------------------------------------------------
 
-def Spruce_MmaOp : Spruce_Op<"mma"> {
+def Spruce_Matrix : AnyTypeOf<[AnyRankedTensor, AnyMemRef], "", "::mlir::ShapedType">;
+
+def Spruce_MmaOp : Spruce_Op<"mma", [
+  DeclareOpInterfaceMethods<MemoryEffectsOpInterface>
+]> {
   let description = [{
     `spruce.mma` represents matrix multiply-add instruction in a GPU, such as
     the `mma.sync` instruction in NVIDIA GPUs. `spruce.mma` is designed to be
     at a higher level without the shape and type restrictions that `mma.sync`
     instructions have. It will be lowered to `mma.sync` by the pipeline via
-    tiling and type conversions.
+    tiling and type conversions. Tensor operands produce a tensor result.
+    Memref operands update the accumulator in place and produce no results.
   }];
 
   let arguments = (ins
-    AnyRankedTensor:$lhs,
-    AnyRankedTensor:$rhs,
-    AnyRankedTensor:$acc);
+    Spruce_Matrix:$lhs,
+    Spruce_Matrix:$rhs,
+    Spruce_Matrix:$acc);
 
   let results = (outs
-    AnyRankedTensor:$result);
+    Optional<AnyRankedTensor>:$result);
 
   let assemblyFormat = [{
     $lhs `,` $rhs `,` $acc attr-dict
     `:` type($lhs) `,` type($rhs) `,` type($acc)
-    `->` type($result)
+    (`->` type($result)^)?
   }];
 
   let extraClassDeclaration = [{

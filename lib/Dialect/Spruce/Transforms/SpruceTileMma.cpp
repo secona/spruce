@@ -84,7 +84,8 @@ struct TileMmaPattern : OpRewritePattern<MmaOp> {
         for (int64_t reduction = 0; reduction < paddedK; reduction += tileK) {
           Value lhs = extractTile(paddedLhs, row, reduction, tileM, tileK);
           Value rhs = extractTile(paddedRhs, reduction, col, tileK, tileN);
-          acc = MmaOp::create(rewriter, op.getLoc(), tileType, lhs, rhs, acc);
+          acc = MmaOp::create(rewriter, op.getLoc(), tileType, lhs, rhs, acc)
+                    .getResult();
         }
         result = rewriter.createOrFold<tensor::InsertSliceOp>(
             op.getLoc(), acc, result,
@@ -113,7 +114,8 @@ struct SpruceTileMma : impl::SpruceTileMmaBase<SpruceTileMma> {
     target.addLegalDialect<arith::ArithDialect, tensor::TensorDialect>();
     target.addDynamicallyLegalOp<MmaOp>([](MmaOp op) {
       auto [m, n, k] = getMNK(op.getLhs().getType(), op.getRhs().getType());
-      return isF32Mma(op) && m == tileM && n == tileN && k == tileK;
+      return !op.getResult() ||
+             (isF32Mma(op) && m == tileM && n == tileN && k == tileK);
     });
 
     RewritePatternSet patterns(&getContext());

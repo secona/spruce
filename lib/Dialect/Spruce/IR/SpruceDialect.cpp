@@ -68,6 +68,8 @@ void SpruceDialect::initialize() {
 #define GET_OP_LIST
 #include "spruce/Dialect/Spruce/IR/SpruceOps.cpp.inc"
       >();
+
+  registerBufferizationInterfaces();
 }
 
 // -----------------------------------------------------------------------------
@@ -104,20 +106,37 @@ LogicalResult KernelOp::verify() {
 // MmaOp
 // -----------------------------------------------------------------------------
 
+void MmaOp::getEffects(
+    SmallVectorImpl<MemoryEffects::EffectInstance> &effects) {
+  if (getResult())
+    return;
+  for (OpOperand &operand : getOperation()->getOpOperands())
+    effects.emplace_back(MemoryEffects::Read::get(), &operand);
+  effects.emplace_back(MemoryEffects::Write::get(), &getAccMutable());
+}
+
 LogicalResult MmaOp::verify() {
-  RankedTensorType lhsType = getLhs().getType();
-  RankedTensorType rhsType = getRhs().getType();
-  RankedTensorType accType = getAcc().getType();
-  RankedTensorType resultType = getResult().getType();
+  ShapedType lhsType = getLhs().getType();
+  ShapedType rhsType = getRhs().getType();
+  ShapedType accType = getAcc().getType();
+  if (getResult()) {
+    if (!isa<RankedTensorType>(lhsType) || !isa<RankedTensorType>(rhsType) ||
+        !isa<RankedTensorType>(accType))
+      return emitOpError("expected tensor operands with a tensor result");
+  } else if (!isa<MemRefType>(lhsType) || !isa<MemRefType>(rhsType) ||
+             !isa<MemRefType>(accType)) {
+    return emitOpError("expected memref operands when there is no result");
+  }
+  StringRef kind = getResult() ? "tensor" : "memref";
 
   if (lhsType.getRank() != 2)
-    return emitOpError("expected lhs to be a rank-2 tensor");
+    return emitOpError("expected lhs to be a rank-2 ") << kind;
   if (rhsType.getRank() != 2)
-    return emitOpError("expected rhs to be a rank-2 tensor");
+    return emitOpError("expected rhs to be a rank-2 ") << kind;
   if (accType.getRank() != 2)
-    return emitOpError("expected acc to be a rank-2 tensor");
+    return emitOpError("expected acc to be a rank-2 ") << kind;
 
-  if (resultType.getShape() != accType.getShape())
+  if (getResult() && getResult().getType().getShape() != accType.getShape())
     return emitOpError("expected result and acc to have the same shape");
 
   if (!lhsType.hasStaticShape() || !rhsType.hasStaticShape() ||

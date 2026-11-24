@@ -1,4 +1,5 @@
 add_mlir_dialect_library(SpruceDialect
+  Bufferization.cpp
   SpruceAttributes.cpp
   SpruceDialect.cpp
 
@@ -6,6 +7,8 @@ add_mlir_dialect_library(SpruceDialect
   SpruceDialectIncGen
 
   LINK_LIBS PUBLIC
+  MLIRBufferizationDialect
   MLIRIR
+  MLIRSideEffectInterfaces
   MLIRSparseTensorDialect
 )

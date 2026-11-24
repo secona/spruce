@@ -11,9 +11,11 @@
 namespace mlir::spruce {
 
 inline bool isF32Mma(MmaOp op) {
-  RankedTensorType lhsType = op.getLhs().getType();
-  RankedTensorType rhsType = op.getRhs().getType();
-  RankedTensorType accType = op.getAcc().getType();
+  ShapedType lhsType = op.getLhs().getType();
+  ShapedType rhsType = op.getRhs().getType();
+  ShapedType accType = op.getAcc().getType();
+  if (!op.getResult())
+    return false;
   RankedTensorType resultType = op.getResult().getType();
 
   return lhsType.getElementType().isF32() && rhsType.getElementType().isF32() &&
@@ -30,7 +32,7 @@ inline LogicalResult verifyF32Mma(MmaOp op, llvm::StringRef passName) {
 }
 
 inline std::tuple<std::int64_t, std::int64_t, std::int64_t>
-getMNK(RankedTensorType lhs, RankedTensorType rhs) {
+getMNK(ShapedType lhs, ShapedType rhs) {
   int64_t m = lhs.getDimSize(0);
   int64_t k = lhs.getDimSize(1);
   int64_t n = rhs.getDimSize(1);

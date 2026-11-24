@@ -80,7 +80,8 @@ Value buildActiveTiles(OpBuilder &builder, Location loc, Value lhs, Value rhs,
                   SmallVector<Location>(kernel.getNumOperands(), loc));
               Value sum =
                   MmaOp::create(b, loc, acc.getType(), body->getArgument(0),
-                                body->getArgument(1), body->getArgument(2));
+                                body->getArgument(1), body->getArgument(2))
+                      .getResult();
               YieldOp::create(b, loc, sum);
             }
             scf::YieldOp::create(b, loc, kernel.getResult(0));

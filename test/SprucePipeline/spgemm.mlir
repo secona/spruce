@@ -1,4 +1,5 @@
 // RUN: spruce-opt -spruce-pipeline -verify-roundtrip %s | FileCheck %s
+// RUN: spruce-opt -convert-linalg-to-spruce -one-shot-bufferize="bufferize-function-boundaries" -verify-roundtrip %s | FileCheck %s --check-prefix=BUFFER
 
 // CHECK-LABEL: func.func @spgemm(
 // CHECK-SAME:    %[[A:[^:]+]]: tensor<64x64xf16>, %[[B:[^:]+]]: tensor<64x64xf16>) -> tensor<64x64xf16>
@@ -28,6 +29,19 @@
 // CHECK-NEXT:    }
 // CHECK-NEXT:    %[[OUT:.*]] = tensor.insert_slice %[[TILE]] into %[[C]][0, 0] [16, 8] [1, 1]
 // CHECK-NEXT:    return %[[OUT]] : tensor<64x64xf16>
+
+// BUFFER-LABEL: func.func @spgemm(
+// BUFFER:         %[[INIT:.*]] = memref.subview
+// BUFFER:         scf.for {{.*}} iter_args(%[[ACC:[^ ]+]] = %[[INIT]])
+// BUFFER:           %[[LHS:.*]] = memref.subview
+// BUFFER:           %[[RHS:.*]] = memref.subview
+// BUFFER-NEXT:      %[[SUM:.*]] = spruce.kernel(%[[A_D:[^ ]+]] = %[[LHS]] : memref<16x8xf16,
+// BUFFER-SAME:        %[[B_D:[^ ]+]] = %[[RHS]] : memref<8x8xf16,
+// BUFFER-SAME:        %[[C_D:[^ ]+]] = %[[ACC]] : memref<16x8xf16,
+// BUFFER-NEXT:        spruce.mma %[[A_D]], %[[B_D]], %[[C_D]] : memref
+// BUFFER-NEXT:        spruce.yield %[[C_D]] : memref<16x8xf16,
+// BUFFER-NEXT:      } -> (memref<16x8xf16, {{.*}}>) {spruce.target = #target}
+// BUFFER-NEXT:      scf.yield %[[SUM]] : memref
 
 func.func @spgemm(
   %A: tensor<64x64xf16>,

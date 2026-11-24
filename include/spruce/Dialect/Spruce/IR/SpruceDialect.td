@@ -12,6 +12,7 @@ def Spruce_Dialect : Dialect {
 
   let extraClassDeclaration = [{
     void registerAttributes();
+    void registerBufferizationInterfaces();
   }];
 }
 

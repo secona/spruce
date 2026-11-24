@@ -24,8 +24,8 @@ struct MmaToVectorConversion : OpRewritePattern<MmaOp> {
       return rewriter.notifyMatchFailure(
           op, "currently supports only f32 operands and result");
 
-    RankedTensorType lhsType = op.getLhs().getType();
-    RankedTensorType rhsType = op.getRhs().getType();
+    ShapedType lhsType = op.getLhs().getType();
+    ShapedType rhsType = op.getRhs().getType();
     auto [m, n, k] = getMNK(lhsType, rhsType);
 
     if (m == 0 || n == 0 || k == 0) {

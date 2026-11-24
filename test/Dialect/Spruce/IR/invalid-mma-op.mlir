@@ -54,3 +54,18 @@ func.func @column_dimension(%lhs: tensor<3x5xf16>, %rhs: tensor<5x7xf16>, %acc: 
   return %result : tensor<3x8xf32>
 }
 
+// -----
+
+func.func @mixed_operands(%a: tensor<8x8xf32>, %b: memref<8x8xf32>) {
+  // expected-error@+1 {{expected memref operands when there is no result}}
+  spruce.mma %a, %b, %b : tensor<8x8xf32>, memref<8x8xf32>, memref<8x8xf32>
+  return
+}
+
+// -----
+
+func.func @buffer_result(%a: memref<8x8xf32>) {
+  // expected-error@+1 {{expected tensor operands with a tensor result}}
+  %r = spruce.mma %a, %a, %a : memref<8x8xf32>, memref<8x8xf32>, memref<8x8xf32> -> tensor<8x8xf32>
+  return
+}

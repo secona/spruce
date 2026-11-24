@@ -22,12 +22,14 @@ struct MmaOpConversion : OpRewritePattern<MmaOp> {
 
   LogicalResult matchAndRewrite(MmaOp op,
                                 PatternRewriter &rewriter) const override {
+    if (!op.getResult())
+      return rewriter.notifyMatchFailure(op, "expected tensor MMA");
     auto loc = op.getLoc();
     auto ctx = op.getContext();
     auto [m, n, k] = op.getMNK();
 
     // Only accept floating point types for now.
-    auto ty = cast<FloatType>(op.getType().getElementType());
+    auto ty = dyn_cast<FloatType>(op.getResult().getType().getElementType());
     if (!ty)
       return failure();
 
