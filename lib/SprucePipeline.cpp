@@ -1,10 +1,11 @@
+#include "mlir/Dialect/Bufferization/Transforms/Passes.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
+#include "mlir/Dialect/GPU/Pipelines/Passes.h"
+#include "mlir/Dialect/Linalg/Passes.h"
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/Pass/PassManager.h"
-#include "mlir/Transforms/Passes.h"
 
 #include "spruce/Conversions/Passes.h"
-#include "spruce/Dialect/Spruce/Transforms/Passes.h"
 #include "spruce/SprucePipeline.h"
 
 namespace mlir::spruce {
@@ -14,11 +15,21 @@ namespace mlir::spruce {
 namespace {
 
 void buildPipeline(OpPassManager &pipeline) {
-  auto &functions = pipeline.nest<func::FuncOp>();
-  functions.addPass(createConvertLinalgToSpruce());
-  functions.addPass(createConvertSpruceToSpruceGPU());
-  functions.addPass(createCanonicalizerPass());
-  functions.addPass(createCSEPass());
+  pipeline.addNestedPass<func::FuncOp>(createConvertLinalgToSpruce());
+
+  bufferization::OneShotBufferizePassOptions bufferizeOptions;
+  bufferizeOptions.bufferizeFunctionBoundaries = true;
+  pipeline.addPass(bufferization::createOneShotBufferizePass(bufferizeOptions));
+
+  ConvertSpruceToGPUOptions gpuOptions;
+  gpuOptions.mmaTarget = "wmma";
+  pipeline.addPass(createConvertSpruceToGPU(gpuOptions));
+  pipeline.addPass(createConvertLinalgToLoopsPass());
+
+  gpu::GPUToNVVMPipelineOptions nvvmOptions;
+  nvvmOptions.cubinChip = "sm_80";
+  nvvmOptions.cubinFormat = "bin";
+  gpu::buildLowerToNVVMPassPipeline(pipeline, nvvmOptions);
 }
 
 struct SprucePipeline : impl::SprucePipelineBase<SprucePipeline> {

@@ -9,8 +9,9 @@ add_mlir_library(SprucePipeline
 
   LINK_LIBS PUBLIC
   SpruceConversions
-  SpruceTransforms
+  MLIRBufferizationTransforms
   MLIRFuncDialect
+  MLIRGPUPipelines
+  MLIRLinalgTransforms
   MLIRPass
-  MLIRTransforms
 )
