@@ -49,7 +49,7 @@ COPY . /src/spruce
 RUN git -C /src/spruce submodule update --init --recursive
 
 # ------------------------------------------------------------------------------
-# Build Adlet and TACO (MuOpt is header-only)
+# Build
 # ------------------------------------------------------------------------------
 
 RUN cmake \
@@ -62,7 +62,7 @@ RUN cmake \
     && cmake \
         --build /src/spruce/build \
         --parallel "${BUILD_JOBS:-$(nproc)}" \
-        --target spruce-adlet
+        --target spruce-adlet spruce-opt spa-exporter
 
 WORKDIR /eval
 
