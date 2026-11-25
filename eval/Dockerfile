@@ -20,8 +20,9 @@ ARG BUILD_JOBS
 
 RUN git clone --depth 1 --branch llvmorg-23.1.6 \
         https://github.com/llvm/llvm-project.git \
-        /src/llvm-project \
-    && cmake \
+        /src/llvm-project
+
+RUN cmake \
         -S /src/llvm-project/llvm \
         -B /tmp/build \
         -G Ninja \
@@ -37,6 +38,7 @@ RUN git clone --depth 1 --branch llvmorg-23.1.6 \
         --parallel "${BUILD_JOBS:-$(nproc)}" \
         --target install \
     && rm -rf /tmp/build /src/llvm-project
+
 ENV LLVM_DIR=/opt/llvm
 
 # ------------------------------------------------------------------------------
