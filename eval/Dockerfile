@@ -1,5 +1,9 @@
 FROM nvidia/cuda:13.2.0-devel-ubuntu24.04@sha256:f9492f2eea77fbc3d0c14fa8738f35946b42da72917bf5959d284ca39b4f209a
 
+# ------------------------------------------------------------------------------
+# Install required packages
+# ------------------------------------------------------------------------------
+
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         build-essential \
@@ -8,8 +12,13 @@ RUN apt-get update \
         ninja-build \
         python3-venv
 
+# ------------------------------------------------------------------------------
 # Install LLVM 23.1.6
-RUN git clone --depth 1 --branch llvmorg-23.1.6 https://github.com/llvm/llvm-project.git /src/llvm-project \
+# ------------------------------------------------------------------------------
+
+RUN git clone --depth 1 --branch llvmorg-23.1.6 \
+        https://github.com/llvm/llvm-project.git \
+        /src/llvm-project \
     && cmake \
         -S /src/llvm-project/llvm \
         -B /tmp/build \
@@ -36,6 +45,12 @@ RUN git clone --depth 1 --branch llvmorg-23.1.6 https://github.com/llvm/llvm-pro
     && rm -rf /tmp/build /src/llvm-project
 ENV LLVM_DIR=/opt/llvm
 
+# ------------------------------------------------------------------------------
+# Prepare Spruce source
+# ------------------------------------------------------------------------------
+
+COPY . /src/spruce
+RUN git -C /src/spruce submodule update --init --recursive
 
 WORKDIR /eval
 
