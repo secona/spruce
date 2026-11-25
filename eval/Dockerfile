@@ -16,6 +16,8 @@ RUN apt-get update \
 # Install LLVM 23.1.6
 # ------------------------------------------------------------------------------
 
+ARG BUILD_JOBS
+
 RUN git clone --depth 1 --branch llvmorg-23.1.6 \
         https://github.com/llvm/llvm-project.git \
         /src/llvm-project \
@@ -32,16 +34,8 @@ RUN git clone --depth 1 --branch llvmorg-23.1.6 \
         -DCMAKE_LIBRARY_PATH=/usr/local/cuda/lib64/stubs \
     && cmake \
         --build /tmp/build \
-        --parallel "${BUILD_JOBS}" \
-        --target \
-        install-mlir-opt \
-        install-mlir-translate \
-        install-llc \
-        install-mlir-headers \
-        install-mlir_cuda_runtime \
-        install-mlir_c_runner_utils \
-        install-mlir_float16_utils \
-        install-mlir_apfloat_wrappers \
+        --parallel "${BUILD_JOBS:-$(nproc)}" \
+        --target install \
     && rm -rf /tmp/build /src/llvm-project
 ENV LLVM_DIR=/opt/llvm
 
@@ -51,6 +45,22 @@ ENV LLVM_DIR=/opt/llvm
 
 COPY . /src/spruce
 RUN git -C /src/spruce submodule update --init --recursive
+
+# ------------------------------------------------------------------------------
+# Build Adlet and TACO (MuOpt is header-only)
+# ------------------------------------------------------------------------------
+
+RUN cmake \
+        -S /src/spruce \
+        -B /src/spruce/build \
+        -G Ninja \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_PREFIX_PATH=/opt/llvm \
+        -DBUILD_TESTING=OFF \
+    && cmake \
+        --build /src/spruce/build \
+        --parallel "${BUILD_JOBS:-$(nproc)}" \
+        --target spruce-adlet
 
 WORKDIR /eval
 
