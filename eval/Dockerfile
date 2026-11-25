@@ -62,7 +62,7 @@ RUN cmake \
     && cmake \
         --build /src/spruce/build \
         --parallel "${BUILD_JOBS:-$(nproc)}" \
-        --target spruce-adlet spruce-opt spa-exporter
+        --target spruce spruce-opt
 
 WORKDIR /eval
 

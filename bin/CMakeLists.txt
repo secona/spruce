@@ -5,7 +5,6 @@ set_target_properties(spruce PROPERTIES
 target_link_libraries(spruce PRIVATE
   LLVMSupport
   MLIRIR
-  muopt
-  spruce-adlet
-  taco
+  muopt::muopt
+  adlet
 )
