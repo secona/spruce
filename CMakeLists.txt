@@ -31,6 +31,7 @@ add_definitions(${LLVM_DEFINITIONS})
 add_subdirectory(include)
 add_subdirectory(lib)
 add_subdirectory(tools)
+add_subdirectory(bin)
 
 option(SPRUCE_INCLUDE_TESTS "Include the Spruce regression tests" ON)
 if(BUILD_TESTING AND SPRUCE_INCLUDE_TESTS)
