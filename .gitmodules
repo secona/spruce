@@ -4,6 +4,3 @@
 [submodule "third_party/taco"]
 	path = third_party/taco
 	url = https://github.com/tensor-compiler/taco
-[submodule "third_party/muopt"]
-	path = third_party/muopt
-	url = https://github.com/secona/muopt.git

@@ -22,5 +22,3 @@ file(CREATE_LINK "${ADLET_SOURCE_DIR}/include" "${ADLET_INCLUDE_ROOT}/adlet"
 target_include_directories(adlet SYSTEM PUBLIC "${ADLET_INCLUDE_ROOT}")
 target_compile_definitions(adlet PUBLIC SIZE_MACRO=2048)
 target_link_libraries(adlet PUBLIC taco)
-
-add_subdirectory("${PROJECT_SOURCE_DIR}/third_party/muopt" muopt EXCLUDE_FROM_ALL)

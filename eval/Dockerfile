@@ -29,6 +29,8 @@ RUN cmake \
         -DCMAKE_BUILD_TYPE=Release \
         -DCMAKE_INSTALL_PREFIX=/opt/llvm \
         -DLLVM_ENABLE_PROJECTS=mlir \
+        -DLLVM_ENABLE_EH=ON \
+        -DLLVM_ENABLE_RTTI=ON \
         -DLLVM_TARGETS_TO_BUILD='X86;NVPTX' \
         -DMLIR_ENABLE_CUDA_RUNNER=ON \
         -DCMAKE_CUDA_ARCHITECTURES=86 \

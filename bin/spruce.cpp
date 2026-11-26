@@ -1,6 +1,6 @@
 #include "adlet/graph.hpp"
-#include "muopt/muopt.hpp"
 #include "taco/tensor.h"
+#include "llvm/Support/CommandLine.h"
 #include "llvm/Support/JSON.h"
 #include "llvm/Support/raw_ostream.h"
 #include <algorithm>
@@ -19,13 +19,6 @@ using namespace llvm;
 struct InputTensor {
   std::string name;
   std::string path;
-
-  static InputTensor fromString(const std::string &s) {
-    auto pos = s.find("=");
-    if (pos == std::string::npos)
-      throw std::invalid_argument(s);
-    return {s.substr(0, pos), s.substr(pos + 1)};
-  }
 };
 
 std::shared_ptr<Tensor> loadTensor(const InputTensor &t) {
@@ -63,53 +56,29 @@ json::Array chunkBitsToWords(const SparsityVector &mask, int extent) {
   return out;
 }
 
-struct SpruceOptions {
-  std::string einsum;
-  std::vector<InputTensor> inputs;
-  bool sparsityInformation;
-
-  static SpruceOptions parse(int argc, char **argv) {
-    if (argc <= 2)
-      throw std::invalid_argument("not enough argument");
-
-    std::string einsum;
-    std::vector<InputTensor> inputs;
-    bool sparsityInformation = false;
-
-    muopt::Parser parser(argc, argv);
-    while (muopt::Arg arg = parser.next()) {
-      if (arg.is_plain()) {
-        if (einsum.empty()) {
-          einsum = arg.as_str();
-          continue;
-        }
-
-        std::string input(arg.as_str());
-        inputs.push_back(InputTensor::fromString(input));
-
-        continue;
-      }
-
-      if (arg.is_long("sparsity-information")) {
-        sparsityInformation = true;
-        continue;
-      }
-
-      throw std::invalid_argument(std::string(arg.as_str()));
-    }
-
-    return {einsum, inputs, sparsityInformation};
-  }
-};
-
 } // namespace
 
-int main(int argc, char **argv) {
-  auto opt = SpruceOptions::parse(argc, argv);
+namespace opt {
 
-  std::vector<std::shared_ptr<Tensor>> inputs(opt.inputs.size());
-  std::transform(opt.inputs.begin(), opt.inputs.end(), inputs.begin(),
-                 loadTensor);
+cl::opt<std::string> einsum(cl::Positional, cl::Required);
+cl::list<std::string> inputs(cl::Positional, cl::OneOrMore);
+cl::opt<bool> sparsityInformation("sparsity-information");
+
+} // namespace opt
+
+int main(int argc, char **argv) {
+  cl::ParseCommandLineOptions(argc, argv);
+
+  std::vector<InputTensor> bindings;
+  for (StringRef input : opt::inputs) {
+    auto [name, path] = input.split('=');
+    if (name.empty() || path.empty())
+      throw std::invalid_argument("input tensor");
+    bindings.push_back({name.str(), path.str()});
+  }
+
+  std::vector<std::shared_ptr<Tensor>> inputs(bindings.size());
+  std::transform(bindings.begin(), bindings.end(), inputs.begin(), loadTensor);
 
   // TODO: Implement more than just this matrix size.
   auto rows = inputs[0]->sizes[0];
@@ -117,12 +86,12 @@ int main(int argc, char **argv) {
   std::shared_ptr<Tensor> out =
       std::make_shared<Tensor>(std::vector<int>{rows, cols}, "out");
 
-  auto einsum = std::make_shared<Einsum>(inputs, out, opt.einsum);
+  auto einsum = std::make_shared<Einsum>(inputs, out, opt::einsum.getValue());
 
   auto graph = Graph::build_graph(inputs, out, {einsum});
   graph.run_propagation();
 
-  if (opt.sparsityInformation) {
+  if (opt::sparsityInformation) {
     json::Value result(json::Array{
         json::Object{{"size", rows},
                      {"words", chunkBitsToWords(out->sparsities[0], rows)}},
