@@ -9,8 +9,6 @@
 
 namespace mlir::spruce {
 
-namespace {
-
 void buildSprucePipeline(OpPassManager &pm,
                          const SprucePipelineOptions &options) {
   pm.addNestedPass<func::FuncOp>(createConvertLinalgToSpruce());
@@ -29,8 +27,6 @@ void buildSprucePipeline(OpPassManager &pm,
   nvvmOptions.cubinFormat = "bin";
   gpu::buildLowerToNVVMPassPipeline(pm, nvvmOptions);
 }
-
-} // namespace
 
 void registerSprucePipeline() {
   PassPipelineRegistration<SprucePipelineOptions>("spruce-pipeline", "",

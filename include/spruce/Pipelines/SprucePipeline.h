@@ -3,6 +3,10 @@
 
 #include "mlir/Pass/PassOptions.h"
 
+namespace mlir {
+class OpPassManager;
+} // namespace mlir
+
 namespace mlir::spruce {
 
 struct SprucePipelineOptions : PassPipelineOptions<SprucePipelineOptions> {
@@ -21,6 +25,8 @@ struct SprucePipelineOptions : PassPipelineOptions<SprucePipelineOptions> {
   };
 };
 
+void buildSprucePipeline(OpPassManager &pm,
+                         const SprucePipelineOptions &options = {});
 void registerSprucePipeline();
 
 } // namespace mlir::spruce
