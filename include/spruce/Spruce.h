@@ -5,6 +5,7 @@
 #include <chrono>
 #include <memory>
 #include <optional>
+#include <ratio>
 #include <string>
 #include <vector>
 
@@ -22,15 +23,24 @@ struct InputTensor {
   void read();
 };
 
-struct CompileTimes {
-  std::optional<std::chrono::nanoseconds> spaAnalysis;
-  std::optional<std::chrono::nanoseconds> mlirLowering;
-  std::optional<std::chrono::nanoseconds> llvmCompilation;
-  std::chrono::nanoseconds total{};
-};
+class Timing {
+  using Clock = std::chrono::steady_clock;
 
-struct RunTimes {
-  std::chrono::nanoseconds total{};
+  struct Entry {
+    std::string label;
+    double time;
+  };
+
+  Clock::time_point start;
+  std::vector<Entry> entries;
+
+public:
+  Timing() : start(Clock::now()) {}
+  Timing(size_t n) : start(Clock::now()) { entries.reserve(n); }
+
+  void tick(const std::string &label);
+
+  void print();
 };
 
 class Kernel {
@@ -41,9 +51,9 @@ class Kernel {
 public:
   Kernel(std::string einsum, std::vector<InputTensor> ins);
 
-  void compile(CompileTimes &times);
+  Timing compile();
 
-  void run(RunTimes &times);
+  Timing run();
 };
 
 } // namespace spruce

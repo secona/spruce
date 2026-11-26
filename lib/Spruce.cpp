@@ -60,6 +60,10 @@ func.func @spgemm(
 
 } // namespace
 
+// -----------------------------------------------------------------------------
+// InputTensor
+// -----------------------------------------------------------------------------
+
 void InputTensor::read() {
   taco::Tensor<double> matrix(taco::read(path, taco::Sparse));
   const std::vector<int> &shape = matrix.getDimensions();
@@ -75,6 +79,10 @@ void InputTensor::read() {
   adletTensor = std::make_shared<::Tensor>(shape, sparsities, name);
 }
 
+// -----------------------------------------------------------------------------
+// Kernel
+// -----------------------------------------------------------------------------
+
 Kernel::Kernel(std::string einsum, std::vector<InputTensor> ins)
     : einsum(einsum), ins(ins) {
   registry.insert<mlir::spruce::SpruceDialect>();
@@ -83,9 +91,8 @@ Kernel::Kernel(std::string einsum, std::vector<InputTensor> ins)
   mlir::registerAllGPUToLLVMIRTranslations(registry);
 }
 
-void Kernel::compile(CompileTimes &times) {
-  times = {};
-  const auto start = std::chrono::steady_clock::now();
+Timing Kernel::compile() {
+  Timing t(2);
 
   // ---------------------------------------------------------------------------
   // SPA Analysis
@@ -104,6 +111,8 @@ void Kernel::compile(CompileTimes &times) {
 
   auto graph = ::Graph::build_graph(inputs, out, {op});
   graph.run_propagation();
+
+  t.tick("spa");
 
   // ---------------------------------------------------------------------------
   // Lowering MLIR
@@ -131,18 +140,36 @@ void Kernel::compile(CompileTimes &times) {
   if (error)
     throw std::runtime_error(llvm::toString(std::move(error)));
 
-  times.total = std::chrono::duration_cast<std::chrono::nanoseconds>(
-      std::chrono::steady_clock::now() - start);
+  t.tick("mlir");
+  return t;
 }
 
-void Kernel::run(RunTimes &times) {
-  times = {};
-  const auto start = std::chrono::steady_clock::now();
+Timing Kernel::run() {
+  Timing t(1);
 
   // TODO: Run the kernel.
 
-  times.total = std::chrono::duration_cast<std::chrono::nanoseconds>(
-      std::chrono::steady_clock::now() - start);
+  t.tick("run");
+  return t;
+}
+
+// -----------------------------------------------------------------------------
+// Timing
+// -----------------------------------------------------------------------------
+
+void Timing::tick(const std::string &label) {
+  auto now = Clock::now();
+  double elapsed =
+      std::chrono::duration<double, std::milli>(now - start).count();
+
+  start = now;
+  entries.push_back({label, elapsed});
+}
+
+void Timing::print() {
+  for (auto &[label, time] : entries) {
+    std::cout << label << ": " << time << " ms\n";
+  }
 }
 
 } // namespace spruce
