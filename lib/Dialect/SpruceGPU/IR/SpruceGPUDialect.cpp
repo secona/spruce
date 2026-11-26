@@ -1,5 +1,9 @@
 #include "spruce/Dialect/SpruceGPU/IR/SpruceGPUDialect.h"
 
+#include "mlir/IR/Builders.h"
+#include "mlir/IR/DialectImplementation.h"
+#include "llvm/ADT/TypeSwitch.h"
+
 #include "spruce/Dialect/SpruceGPU/IR/SpruceGPUDialect.cpp.inc"
 
 #define GET_TYPEDEF_CLASSES
