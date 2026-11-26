@@ -4,7 +4,10 @@
 
 int main() {
   spruce::Tensor A("A", "bcsstk01.mtx");
+  A.read();
+
   spruce::Tensor B("B", "bcsstk01.mtx");
+  B.read();
 
   spruce::Kernel kernel("ij,jk->ik", {A, B});
 

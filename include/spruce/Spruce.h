@@ -3,17 +3,23 @@
 
 #include "mlir/IR/DialectRegistry.h"
 #include <chrono>
+#include <memory>
 #include <optional>
 #include <string>
 #include <vector>
+
+class Tensor; // Adlet tensor
 
 namespace spruce {
 
 struct Tensor {
   std::string name;
   std::string path;
+  std::shared_ptr<::Tensor> adletTensor;
 
   Tensor(std::string name, std::string path) : name(name), path(path) {}
+
+  void read();
 };
 
 struct CompileTimes {

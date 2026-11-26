@@ -2,6 +2,10 @@
 #include "spruce/Dialect/Spruce/IR/SpruceDialect.h"
 #include "spruce/Pipelines/SprucePipeline.h"
 
+#include "taco/tensor.h"
+
+#include "adlet/graph.hpp"
+
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/InitAllDialects.h"
 #include "mlir/InitAllExtensions.h"
@@ -54,6 +58,21 @@ func.func @spgemm(
 )mlir";
 
 } // namespace
+
+void Tensor::read() {
+  taco::Tensor<double> matrix(taco::read(path, taco::Sparse));
+  const std::vector<int> &shape = matrix.getDimensions();
+
+  std::vector<SparsityVector> sparsities(2);
+  for (const auto &[crd, v] : matrix) {
+    if (v == 0.0)
+      continue;
+    sparsities[0].set(crd[0]);
+    sparsities[1].set(crd[1]);
+  }
+
+  adletTensor = std::make_shared<::Tensor>(shape, sparsities, name);
+}
 
 Kernel::Kernel(std::string einsum, std::vector<Tensor> ins)
     : einsum(einsum), ins(ins) {
