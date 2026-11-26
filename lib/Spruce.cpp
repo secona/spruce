@@ -6,13 +6,16 @@
 
 #include "adlet/graph.hpp"
 
+#include "mlir/ExecutionEngine/ExecutionEngine.h"
+#include "mlir/ExecutionEngine/OptUtils.h"
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/InitAllDialects.h"
 #include "mlir/InitAllExtensions.h"
 #include "mlir/Parser/Parser.h"
 #include "mlir/Pass/PassManager.h"
 #include "mlir/Target/LLVMIR/Dialect/All.h"
-#include "mlir/Target/LLVMIR/Export.h"
+#include "llvm/Support/DynamicLibrary.h"
+#include "llvm/Support/TargetSelect.h"
 
 #include <algorithm>
 #include <stdexcept>
@@ -93,8 +96,10 @@ Kernel::Kernel(std::string einsum, std::vector<InputTensor> ins)
         return mlir::MLIRContext(registry);
       }()) {}
 
+Kernel::~Kernel() = default;
+
 Timing Kernel::compile() {
-  Timing t(3);
+  Timing t(5);
 
   // ---------------------------------------------------------------------------
   // SPA Analysis
@@ -137,19 +142,18 @@ Timing Kernel::compile() {
   // Translate to LLVM
   // ---------------------------------------------------------------------------
 
-  auto translatedModule =
-      mlir::translateModuleToLLVMIR(module->getOperation(), llvmContext);
-  if (!translatedModule)
-    throw std::runtime_error("Failed to translate the kernel to LLVM IR");
+  llvm::InitializeNativeTarget();
+  llvm::InitializeNativeTargetAsmPrinter();
 
-  t.tick("translate-to-llvm");
+  auto optPipeline = mlir::makeOptimizingTransformer(
+      /*optLevel=*/3, /*sizeLevel=*/0,
+      /*targetMachine=*/nullptr);
+  mlir::ExecutionEngineOptions options;
+  options.transformer = optPipeline;
 
-  // ---------------------------------------------------------------------------
-  // Own the modules
-  // ---------------------------------------------------------------------------
+  auto engine = mlir::ExecutionEngine::create(*module, options)->get();
 
-  mlirModule = std::move(module);
-  llvmModule = std::move(translatedModule);
+  t.tick("execution-engine");
 
   return t;
 }

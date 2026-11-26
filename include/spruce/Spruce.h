@@ -1,20 +1,17 @@
 #ifndef SPRUCE_SPRUCE_H
 #define SPRUCE_SPRUCE_H
 
-#include "mlir/IR/BuiltinOps.h"
-#include "mlir/IR/DialectRegistry.h"
 #include "mlir/IR/MLIRContext.h"
-#include "mlir/IR/OwningOpRef.h"
-#include "llvm/IR/LLVMContext.h"
-#include "llvm/IR/Module.h"
 #include <chrono>
 #include <memory>
-#include <optional>
-#include <ratio>
 #include <string>
 #include <vector>
 
 class Tensor; // Adlet tensor
+
+namespace mlir {
+class ExecutionEngine;
+}
 
 namespace spruce {
 
@@ -53,13 +50,10 @@ class Kernel {
   std::vector<InputTensor> ins;
 
   mlir::MLIRContext mlirContext;
-  mlir::OwningOpRef<mlir::ModuleOp> mlirModule;
-
-  llvm::LLVMContext llvmContext;
-  std::unique_ptr<llvm::Module> llvmModule;
 
 public:
   Kernel(std::string einsum, std::vector<InputTensor> ins);
+  ~Kernel();
 
   Timing compile();
 
