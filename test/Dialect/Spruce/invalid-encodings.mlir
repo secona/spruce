@@ -45,8 +45,9 @@ func.func private @bsr_wrong_rank(tensor<?x?x?x?xf32, #SpruceBSR>)
 // -----
 
 #CSR = #sparse_tensor.encoding<{
-  map = (d0, d1) -> (d0 : dense, d1 : compressed)
+  map = (d0, d1) -> (d0 : dense, d1 : compressed),
+  explicitVal = 1 : i32
 }>
 #SpruceCSR = #spruce.encoding<{sparse = #CSR}>
-// expected-error@+1 {{invalid primary type}}
+// expected-error@+1 {{explicit value type mismatch between encoding and tensor element type}}
 func.func private @csr_wrong_element_type(tensor<?x?xi1, #SpruceCSR>)

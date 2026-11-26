@@ -25,12 +25,12 @@
 // CHECK:           memref.store {{.*}}, %[[CS]][
 // PAD:             memref.store %[[ZERO]], %[[CS]][
 // CHECK:           gpu.barrier
-// CHECK:           %[[AF:.*]] = gpu.subgroup_mma_load_matrix %[[AS]][{{.*}}] leadDimension [[K]]
-// CHECK:           %[[BF:.*]] = gpu.subgroup_mma_load_matrix %[[BS]][{{.*}}] leadDimension [[N]]
-// CHECK:           %[[CF:.*]] = gpu.subgroup_mma_load_matrix %[[CS]][{{.*}}] leadDimension [[N]]
+// CHECK:           %[[AF:.*]] = gpu.subgroup_mma_load_matrix %[[AS]][{{.*}}] {leadDimension = [[K]] : index}
+// CHECK:           %[[BF:.*]] = gpu.subgroup_mma_load_matrix %[[BS]][{{.*}}] {leadDimension = [[N]] : index}
+// CHECK:           %[[CF:.*]] = gpu.subgroup_mma_load_matrix %[[CS]][{{.*}}] {leadDimension = [[N]] : index}
 // CHECK:           %[[DF:.*]] = gpu.subgroup_mma_compute %[[AF]], %[[BF]], %[[CF]]
 // CHECK-SAME:        : !gpu.mma_matrix<16x[[K]]xf16, "AOp">, !gpu.mma_matrix<[[K]]x[[N]]xf16, "BOp"> -> !gpu.mma_matrix<16x[[N]]xf16, "COp">
-// CHECK:           gpu.subgroup_mma_store_matrix %[[DF]], %[[CS]][{{.*}}] leadDimension [[N]]
+// CHECK:           gpu.subgroup_mma_store_matrix %[[DF]], %[[CS]][{{.*}}] {leadDimension = [[N]] : index}
 // CHECK:           gpu.barrier
 // CHECK-COUNT-4:   memref.store {{.*}}, %[[C]][
 // CHECK:           gpu.terminator

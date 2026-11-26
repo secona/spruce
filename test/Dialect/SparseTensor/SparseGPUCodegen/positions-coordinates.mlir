@@ -40,8 +40,8 @@
 // CHECK-SAME:      %[[B:[^:]+]]: tensor<16x8xf32>,
 // CHECK-SAME:      %[[C:[^:]+]]: tensor<32x8xf32>) -> tensor<32x8xf32>
 // CHECK:         %[[VIEW:.*]] = sparse_tensor.reinterpret_map %[[A]] : tensor<32x16xf32, #[[BSR]]> to tensor<2x2x16x8xf32, #[[STORAGE]]>
-// CHECK:         %[[H_POS:.*]] = sparse_tensor.positions %[[VIEW]] level = 1 : tensor<2x2x16x8xf32, #[[STORAGE]]> to memref<?xindex>
-// CHECK:         %[[H_CRD:.*]] = sparse_tensor.coordinates %[[VIEW]] level = 1 : tensor<2x2x16x8xf32, #[[STORAGE]]> to memref<?xindex>
+// CHECK:         %[[H_POS:.*]] = sparse_tensor.positions %[[VIEW]] {level = 1 : index} : tensor<2x2x16x8xf32, #[[STORAGE]]> to memref<?xindex>
+// CHECK:         %[[H_CRD:.*]] = sparse_tensor.coordinates %[[VIEW]] {level = 1 : index} : tensor<2x2x16x8xf32, #[[STORAGE]]> to memref<?xindex>
 // CHECK:         %[[POS_SIZE:.*]] = memref.dim %[[H_POS]], %{{.*}} : memref<?xindex>
 // CHECK:         %[[D_POS:.*]], %[[POS_ALLOC:.*]] = gpu.alloc async [%{{.*}}] (%[[POS_SIZE]]) : memref<?xindex>
 // CHECK:         gpu.memcpy async [%[[POS_ALLOC]]] %[[D_POS]], %[[H_POS]] : memref<?xindex>, memref<?xindex>

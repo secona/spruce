@@ -1,5 +1,5 @@
 // RUN: spruce-opt -spruce-tile-mma -convert-spruce-to-vector -one-shot-bufferize="bufferize-function-boundaries function-boundary-type-conversion=identity-layout-map" -verify-roundtrip %s | FileCheck %s --check-prefix=BUFFERIZE --implicit-check-not=spruce.mma --implicit-check-not='tensor<'
-// RUN: spruce-opt -spruce-tile-mma -convert-spruce-to-vector -one-shot-bufferize="bufferize-function-boundaries function-boundary-type-conversion=identity-layout-map" -convert-vector-to-nvgpu -canonicalize -verify-roundtrip %s | FileCheck %s --check-prefix=NVGPU --implicit-check-not=spruce.mma --implicit-check-not=vector.contract --implicit-check-not='tensor<'
+// RUN: spruce-opt -spruce-tile-mma -convert-spruce-to-vector -one-shot-bufferize="bufferize-function-boundaries function-boundary-type-conversion=identity-layout-map" -convert-vector-to-gpu="use-nvgpu=true" -canonicalize -verify-roundtrip %s | FileCheck %s --check-prefix=NVGPU --implicit-check-not=spruce.mma --implicit-check-not=vector.contract --implicit-check-not='tensor<'
 
 // BUFFERIZE-DAG: #[[TRANSPOSE:.*]] = affine_map<(d0, d1) -> (d1, d0)>
 // BUFFERIZE-DAG: #[[LHS_MAP:.*]] = affine_map<(d0, d1, d2) -> (d0, d2)>
@@ -23,7 +23,7 @@
 
 // NVGPU-LABEL: func.func @supported_tile(
 // NVGPU:         %[[LANE:.*]] = gpu.lane_id
-// NVGPU:         %[[PRODUCT:.*]] = nvgpu.mma.sync(%{{.*}}, %{{.*}}, %{{.*}}) mmaShape = [16, 8, 8] : (vector<4x1xf32>, vector<2x1xf32>, vector<2x2xf32>) -> vector<2x2xf32>
+// NVGPU:         %[[PRODUCT:.*]] = nvgpu.mma.sync(%{{.*}}, %{{.*}}, %{{.*}}) {mmaShape = [16, 8, 8]} : (vector<4x1xf32>, vector<2x1xf32>, vector<2x2xf32>) -> vector<2x2xf32>
 // NVGPU:         vector.store
 // NVGPU:         return
 

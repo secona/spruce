@@ -26,8 +26,8 @@ func.func @storage_csr(%arg0: tensor<?x?xf64, #CSR>) {
   %c0 = arith.constant 0 : index
 
   %val = sparse_tensor.values %arg0 : tensor<?x?xf64, #CSR> to memref<?xf64>
-  %pos = sparse_tensor.positions %arg0 level = 1 : tensor<?x?xf64, #CSR> to memref<?xindex>
-  %crd = sparse_tensor.coordinates %arg0 level = 1 : tensor<?x?xf64, #CSR> to memref<?xindex>
+  %pos = sparse_tensor.positions %arg0 {level = 1 : index} : tensor<?x?xf64, #CSR> to memref<?xindex>
+  %crd = sparse_tensor.coordinates %arg0 {level = 1 : index} : tensor<?x?xf64, #CSR> to memref<?xindex>
 
   "test.use"(%val) : (memref<?xf64>) -> ()
   "test.use"(%pos) : (memref<?xindex>) -> ()
@@ -69,8 +69,8 @@ func.func @storage_bsr(%arg0: tensor<?x?xf64, #BSR>) {
   %c0 = arith.constant 0 : index
 
   %val = sparse_tensor.values %arg0 : tensor<?x?xf64, #BSR> to memref<?xf64>
-  %pos = sparse_tensor.positions %arg0 level = 1 : tensor<?x?xf64, #BSR> to memref<?xindex>
-  %crd = sparse_tensor.coordinates %arg0 level = 1 : tensor<?x?xf64, #BSR> to memref<?xindex>
+  %pos = sparse_tensor.positions %arg0 {level = 1 : index} : tensor<?x?xf64, #BSR> to memref<?xindex>
+  %crd = sparse_tensor.coordinates %arg0 {level = 1 : index} : tensor<?x?xf64, #BSR> to memref<?xindex>
 
   "test.use"(%val) : (memref<?xf64>) -> ()
   "test.use"(%pos) : (memref<?xindex>) -> ()
