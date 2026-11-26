@@ -60,7 +60,7 @@ func.func @spgemm(
 
 } // namespace
 
-void Tensor::read() {
+void InputTensor::read() {
   taco::Tensor<double> matrix(taco::read(path, taco::Sparse));
   const std::vector<int> &shape = matrix.getDimensions();
 
@@ -75,7 +75,7 @@ void Tensor::read() {
   adletTensor = std::make_shared<::Tensor>(shape, sparsities, name);
 }
 
-Kernel::Kernel(std::string einsum, std::vector<Tensor> ins)
+Kernel::Kernel(std::string einsum, std::vector<InputTensor> ins)
     : einsum(einsum), ins(ins) {
   registry.insert<mlir::spruce::SpruceDialect>();
   mlir::registerAllDialects(registry);
@@ -93,7 +93,7 @@ void Kernel::compile(CompileTimes &times) {
 
   std::vector<std::shared_ptr<::Tensor>> inputs(ins.size());
   std::transform(ins.begin(), ins.end(), inputs.begin(),
-                 [](const Tensor &t) { return t.adletTensor; });
+                 [](const InputTensor &t) { return t.adletTensor; });
 
   auto rows = inputs[0]->sizes[0];
   auto cols = inputs[1]->sizes[1];
