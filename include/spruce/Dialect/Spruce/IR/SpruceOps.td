@@ -104,26 +104,4 @@ def Spruce_MmaOp : Spruce_Op<"mma", [
   let hasVerifier = 1;
 }
 
-// -----------------------------------------------------------------------------
-// GetBlockOp
-// -----------------------------------------------------------------------------
-
-def Spruce_GetBlockOp : Spruce_Op<"get_block"> {
-  let description = [{
-    `spruce.get_block` represents getting a block of a tensor.
-  }];
-
-  let arguments = (ins
-    AnyRankedTensor:$tensor,
-    Index:$blockIndex);
-
-  let results = (outs
-    AnyRankedTensor:$result);
-
-  let assemblyFormat = [{
-    $tensor `[` $blockIndex `]` attr-dict
-    `:` type($tensor) `->` type($result)
-  }];
-}
-
 #endif

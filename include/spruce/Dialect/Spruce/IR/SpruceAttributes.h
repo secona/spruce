@@ -1,9 +1,9 @@
 #ifndef SPRUCE_IR_SPRUCEATTRIBUTES_H
 #define SPRUCE_IR_SPRUCEATTRIBUTES_H
 
-#include "mlir/Dialect/SparseTensor/IR/SparseTensor.h"
-#include "mlir/IR/TensorEncoding.h"
+#include "mlir/IR/BuiltinAttributes.h"
 #include "llvm/ADT/Bitset.h"
+#include "llvm/ADT/STLExtras.h"
 
 #include <array>
 

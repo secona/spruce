@@ -1,5 +1,4 @@
 add_mlir_library(SpruceTransforms
-  SpruceLowerBlockOps.cpp
   SpruceTileMma.cpp
 
   DEPENDS
@@ -9,9 +8,7 @@ add_mlir_library(SpruceTransforms
   SpruceDialect
   MLIRArithDialect
   MLIRFuncDialect
-  MLIRMemRefDialect
   MLIRPass
-  MLIRSparseTensorDialect
   MLIRTensorDialect
   MLIRTransforms
 )

@@ -6,7 +6,6 @@
 #include "mlir/Interfaces/SideEffectInterfaces.h"
 
 #include "spruce/Dialect/Spruce/IR/SpruceDialect.h.inc"
-#include "spruce/Dialect/Spruce/IR/SpruceTypes.h"
 
 #define GET_OP_CLASSES
 #include "spruce/Dialect/Spruce/IR/SpruceOps.h.inc"

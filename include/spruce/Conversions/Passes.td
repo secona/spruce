@@ -14,16 +14,6 @@ def ConvertLinalgToSpruce : Pass<"convert-linalg-to-spruce", "::mlir::func::Func
   ];
 }
 
-def ConvertSpruceGPUToNVGPU : Pass<"convert-spruce-gpu-to-nvgpu"> {
-  let summary = "Lower SpruceGPU operations to NVGPU (skeleton)";
-  let dependentDialects = ["::mlir::nvgpu::NVGPUDialect"];
-}
-
-def ConvertSpruceGPUToNVVM : Pass<"convert-spruce-gpu-to-nvvm"> {
-  let summary = "Lower SpruceGPU operations to NVVM (skeleton)";
-  let dependentDialects = ["::mlir::NVVM::NVVMDialect"];
-}
-
 def ConvertSpruceToGPU : Pass<"convert-spruce-to-gpu", "::mlir::ModuleOp"> {
   let summary = "convert-spruce-to-gpu";
   let options = [
@@ -36,19 +26,6 @@ def ConvertSpruceToGPU : Pass<"convert-spruce-to-gpu", "::mlir::ModuleOp"> {
     "::mlir::memref::MemRefDialect",
     "::mlir::spruce::SpruceDialect"
   ];
-}
-
-def ConvertSpruceToSpruceGPU : Pass<"convert-spruce-to-spruce-gpu"> {
-  let summary = "convert-spruce-to-spruce-gpu";
-  let dependentDialects = [
-    "::mlir::spruce_gpu::SpruceGPUDialect",
-    "::mlir::spruce::SpruceDialect"
-  ];
-}
-
-def ConvertSpruceToVector : Pass<"convert-spruce-to-vector", "::mlir::func::FuncOp"> {
-  let summary = "convert-spruce-to-vector";
-  let dependentDialects = ["::mlir::arith::ArithDialect", "::mlir::vector::VectorDialect"];
 }
 
 #endif

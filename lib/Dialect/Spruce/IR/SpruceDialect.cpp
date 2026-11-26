@@ -1,13 +1,11 @@
 #include "spruce/Dialect/Spruce/IR/SpruceDialect.h"
 #include "spruce/Dialect/Spruce/IR/SpruceAttributes.h"
 
+#include "mlir/IR/ImplicitLocOpBuilder.h"
 #include "mlir/IR/OpImplementation.h"
 #include "llvm/ADT/STLExtras.h"
 
 #include "spruce/Dialect/Spruce/IR/SpruceDialect.cpp.inc"
-
-#define GET_TYPEDEF_CLASSES
-#include "spruce/Dialect/Spruce/IR/SpruceTypes.cpp.inc"
 
 namespace mlir::spruce {
 
@@ -58,11 +56,6 @@ namespace spruce {
 
 void SpruceDialect::initialize() {
   registerAttributes();
-
-  addTypes<
-#define GET_TYPEDEF_LIST
-#include "spruce/Dialect/Spruce/IR/SpruceTypes.cpp.inc"
-      >();
 
   addOperations<
 #define GET_OP_LIST
