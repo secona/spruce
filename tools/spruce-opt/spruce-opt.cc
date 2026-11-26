@@ -9,7 +9,7 @@
 #include "spruce/Dialect/Spruce/IR/SpruceDialect.h"
 #include "spruce/Conversions/Passes.h"
 #include "spruce/Dialect/Spruce/Transforms/Passes.h"
-#include "spruce/SprucePipeline.h"
+#include "spruce/Pipelines/SprucePipeline.h"
 
 int main(int argc, char **argv) {
   mlir::registerAllPasses();

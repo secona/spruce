@@ -1,4 +1,4 @@
-#include "spruce/SprucePipeline.h"
+#include "spruce/Pipelines/SprucePipeline.h"
 #include "mlir/Dialect/Bufferization/Transforms/Passes.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/GPU/Pipelines/Passes.h"
