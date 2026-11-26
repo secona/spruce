@@ -33,6 +33,7 @@ add_subdirectory(include)
 add_subdirectory(lib)
 add_subdirectory(tools)
 add_subdirectory(bin)
+add_subdirectory(eval)
 
 option(SPRUCE_INCLUDE_TESTS "Include the Spruce regression tests" ON)
 if(BUILD_TESTING AND SPRUCE_INCLUDE_TESTS)

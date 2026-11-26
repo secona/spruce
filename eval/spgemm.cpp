@@ -1,5 +1,7 @@
 #include "spruce/Spruce.h"
 
+#include <iostream>
+
 int main() {
   spruce::Tensor A("A", "bcsstk01.mtx");
   spruce::Tensor B("B", "bcsstk01.mtx");
@@ -9,5 +11,8 @@ int main() {
   spruce::CompileTimes compileTimes;
   kernel.compile(compileTimes);
 
-  kernel.run();
+  std::cout << compileTimes.total.count() << "ns \n";
+
+  spruce::RunTimes runTimes;
+  kernel.run(runTimes);
 }

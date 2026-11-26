@@ -1,6 +1,7 @@
 #ifndef SPRUCE_SPRUCE_H
 #define SPRUCE_SPRUCE_H
 
+#include "mlir/IR/DialectRegistry.h"
 #include <chrono>
 #include <optional>
 #include <string>
@@ -29,10 +30,10 @@ struct RunTimes {
 class Kernel {
   std::string einsum;
   std::vector<Tensor> ins;
+  mlir::DialectRegistry registry;
 
 public:
-  Kernel(std::string einsum, std::vector<Tensor> ins)
-      : einsum(einsum), ins(ins) {}
+  Kernel(std::string einsum, std::vector<Tensor> ins);
 
   void compile(CompileTimes &times);
 

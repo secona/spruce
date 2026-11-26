@@ -4,3 +4,10 @@ add_subdirectory(Pipelines)
 
 add_library(Spruce Spruce.cpp)
 target_include_directories(Spruce PUBLIC "${PROJECT_SOURCE_DIR}/include")
+target_link_libraries(Spruce PRIVATE
+  SprucePipeline
+  MLIRParser
+  MLIRRegisterAllDialects
+  MLIRRegisterAllExtensions
+  MLIRToLLVMIRTranslationRegistration
+)
