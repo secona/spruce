@@ -12,9 +12,11 @@
 #include "mlir/Parser/Parser.h"
 #include "mlir/Pass/PassManager.h"
 #include "mlir/Target/LLVMIR/Dialect/All.h"
+#include "mlir/Target/LLVMIR/Export.h"
 
 #include <algorithm>
 #include <stdexcept>
+#include <utility>
 
 namespace spruce {
 
@@ -92,7 +94,7 @@ Kernel::Kernel(std::string einsum, std::vector<InputTensor> ins)
       }()) {}
 
 Timing Kernel::compile() {
-  Timing t(2);
+  Timing t(3);
 
   // ---------------------------------------------------------------------------
   // SPA Analysis
@@ -129,9 +131,26 @@ Timing Kernel::compile() {
   if (pm.run(*module).failed())
     throw std::runtime_error("Failed to lower the built-in Spruce kernel");
 
-  mlirModule = std::move(module);
-
   t.tick("mlir");
+
+  // ---------------------------------------------------------------------------
+  // Translate to LLVM
+  // ---------------------------------------------------------------------------
+
+  auto translatedModule =
+      mlir::translateModuleToLLVMIR(module->getOperation(), llvmContext);
+  if (!translatedModule)
+    throw std::runtime_error("Failed to translate the kernel to LLVM IR");
+
+  t.tick("translate-to-llvm");
+
+  // ---------------------------------------------------------------------------
+  // Own the modules
+  // ---------------------------------------------------------------------------
+
+  mlirModule = std::move(module);
+  llvmModule = std::move(translatedModule);
+
   return t;
 }
 

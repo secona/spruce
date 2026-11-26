@@ -5,6 +5,8 @@
 #include "mlir/IR/DialectRegistry.h"
 #include "mlir/IR/MLIRContext.h"
 #include "mlir/IR/OwningOpRef.h"
+#include "llvm/IR/LLVMContext.h"
+#include "llvm/IR/Module.h"
 #include <chrono>
 #include <memory>
 #include <optional>
@@ -52,6 +54,9 @@ class Kernel {
 
   mlir::MLIRContext mlirContext;
   mlir::OwningOpRef<mlir::ModuleOp> mlirModule;
+
+  llvm::LLVMContext llvmContext;
+  std::unique_ptr<llvm::Module> llvmModule;
 
 public:
   Kernel(std::string einsum, std::vector<InputTensor> ins);
