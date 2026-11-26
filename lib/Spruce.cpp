@@ -86,6 +86,23 @@ void Kernel::compile(CompileTimes &times) {
   times = {};
   const auto start = std::chrono::steady_clock::now();
 
+  // ---------------------------------------------------------------------------
+  // SPA Analysis
+  // ---------------------------------------------------------------------------
+
+  std::vector<std::shared_ptr<::Tensor>> inputs;
+
+  std::shared_ptr<::Tensor> out;
+
+  auto op = std::make_shared<Einsum>(inputs, out, einsum);
+
+  auto graph = ::Graph::build_graph(inputs, out, {op});
+  graph.run_propagation();
+
+  // ---------------------------------------------------------------------------
+  // Lowering MLIR
+  // ---------------------------------------------------------------------------
+
   mlir::MLIRContext context(registry);
 
   // TODO: Create the kernel source another way.
