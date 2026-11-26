@@ -12,8 +12,6 @@
 #include "mlir/Parser/Parser.h"
 #include "mlir/Pass/PassManager.h"
 #include "mlir/Target/LLVMIR/Dialect/All.h"
-#include "llvm/Support/Error.h"
-#include "llvm/Support/raw_ostream.h"
 
 #include <algorithm>
 #include <stdexcept>
@@ -84,12 +82,14 @@ void InputTensor::read() {
 // -----------------------------------------------------------------------------
 
 Kernel::Kernel(std::string einsum, std::vector<InputTensor> ins)
-    : einsum(einsum), ins(ins) {
-  registry.insert<mlir::spruce::SpruceDialect>();
-  mlir::registerAllDialects(registry);
-  mlir::registerAllExtensions(registry);
-  mlir::registerAllGPUToLLVMIRTranslations(registry);
-}
+    : einsum(einsum), ins(ins), mlirContext([]() {
+        mlir::DialectRegistry registry;
+        registry.insert<mlir::spruce::SpruceDialect>();
+        mlir::registerAllDialects(registry);
+        mlir::registerAllExtensions(registry);
+        mlir::registerAllGPUToLLVMIRTranslations(registry);
+        return mlir::MLIRContext(registry);
+      }()) {}
 
 Timing Kernel::compile() {
   Timing t(2);
@@ -118,27 +118,18 @@ Timing Kernel::compile() {
   // Lowering MLIR
   // ---------------------------------------------------------------------------
 
-  mlir::MLIRContext context(registry);
-
   // TODO: Create the kernel source another way.
-  auto module = mlir::parseSourceString<mlir::ModuleOp>(kernelSource, &context);
+  auto module = mlir::parseSourceString<mlir::ModuleOp>(kernelSource, &mlirContext);
   if (!module)
     throw std::runtime_error("Failed to parse the built-in Spruce kernel");
 
   // Lower using -spruce-pipeline to LLVM dialecct.
-  mlir::PassManager pm(&context);
+  mlir::PassManager pm(&mlirContext);
   mlir::spruce::buildSprucePipeline(pm);
   if (pm.run(*module).failed())
     throw std::runtime_error("Failed to lower the built-in Spruce kernel");
 
-  auto error = llvm::writeToOutput("kernel.mlir", [&](llvm::raw_ostream &out) {
-    module->print(out);
-    out << '\n';
-    return llvm::Error::success();
-  });
-
-  if (error)
-    throw std::runtime_error(llvm::toString(std::move(error)));
+  mlirModule = std::move(module);
 
   t.tick("mlir");
   return t;

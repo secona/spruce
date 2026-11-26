@@ -1,7 +1,10 @@
 #ifndef SPRUCE_SPRUCE_H
 #define SPRUCE_SPRUCE_H
 
+#include "mlir/IR/BuiltinOps.h"
 #include "mlir/IR/DialectRegistry.h"
+#include "mlir/IR/MLIRContext.h"
+#include "mlir/IR/OwningOpRef.h"
 #include <chrono>
 #include <memory>
 #include <optional>
@@ -46,7 +49,9 @@ public:
 class Kernel {
   std::string einsum;
   std::vector<InputTensor> ins;
-  mlir::DialectRegistry registry;
+
+  mlir::MLIRContext mlirContext;
+  mlir::OwningOpRef<mlir::ModuleOp> mlirModule;
 
 public:
   Kernel(std::string einsum, std::vector<InputTensor> ins);
