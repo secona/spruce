@@ -2,7 +2,6 @@
 // RUN: spruce-opt -spruce-pipeline -verify-roundtrip %s | FileCheck %s
 
 // CHECK-DAG: #[[BSR:.*]] = #sparse_tensor.encoding<{ map = (d0, d1) -> (d0 floordiv 16 : dense, d1 floordiv 8 : compressed, d0 mod 16 : dense, d1 mod 8 : dense) }>
-// CHECK-DAG: #[[TARGET:.*]] = #spruce.target<{m = 16, n = 8, k = 8}>
 #BSR = #sparse_tensor.encoding<{
   map = (d0, d1) -> (
     d0 floordiv 16 : dense,
@@ -23,7 +22,7 @@
 // CHECK-SAME:          %[[K_B:[^ ]+]] = %[[B]] : tensor<16x8xf16>,
 // CHECK-SAME:          %[[K_C:[^ ]+]] = %[[C]] : tensor<32x8xf16>) {
 // CHECK-NEXT:        spruce.yield %[[K_C]] : tensor<32x8xf16>
-// CHECK-NEXT:      } -> (tensor<32x8xf16>) {spruce.target = #[[TARGET]]}
+// CHECK-NEXT:      } -> (tensor<32x8xf16>)
 // CHECK-NEXT:      return %[[RESULT]] : tensor<32x8xf16>
 // CHECK-NEXT:    }
 // CHECK-NEXT:  }

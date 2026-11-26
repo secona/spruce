@@ -156,8 +156,6 @@ struct KernelOpConversion : OpRewritePattern<KernelOp> {
                : one;
     auto launch =
         gpu::LaunchOp::create(rewriter, loc, one, one, one, threads, one, one);
-    if (Attribute target = op->getAttr("spruce.target"))
-      launch->setAttr("spruce.target", target);
     IRMapping mapping;
     mapping.map(body.getArguments(), op.getInputs());
     rewriter.setInsertionPointToEnd(&launch.getBody().front());

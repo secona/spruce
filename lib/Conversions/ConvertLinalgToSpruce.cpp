@@ -23,6 +23,10 @@ namespace mlir::spruce {
 
 namespace {
 
+constexpr int64_t tileM = 16;
+constexpr int64_t tileN = 8;
+constexpr int64_t tileK = 8;
+
 FailureOr<SmallVector<int64_t>>
 getActiveTileOffsets(DimMaskAttr dim, int64_t extent, int64_t tileSize) {
   llvm::Bitset<2048> mask = dim.getBitsetMap();
@@ -38,20 +42,20 @@ getActiveTileOffsets(DimMaskAttr dim, int64_t extent, int64_t tileSize) {
 
 Value buildActiveTiles(OpBuilder &builder, Location loc, Value lhs, Value rhs,
                        Value init, ArrayRef<int64_t> rows,
-                       ArrayRef<int64_t> cols, int64_t k, TargetAttr target) {
+                       ArrayRef<int64_t> cols, int64_t k) {
   if (rows.empty() || cols.empty() || k == 0)
     return init;
 
   MLIRContext *ctx = builder.getContext();
 
-  auto lhsSize = getAsIndexOpFoldResult(ctx, {target.getM(), target.getK()});
-  auto rhsSize = getAsIndexOpFoldResult(ctx, {target.getK(), target.getN()});
-  auto accSize = getAsIndexOpFoldResult(ctx, {target.getM(), target.getN()});
+  auto lhsSize = getAsIndexOpFoldResult(ctx, {tileM, tileK});
+  auto rhsSize = getAsIndexOpFoldResult(ctx, {tileK, tileN});
+  auto accSize = getAsIndexOpFoldResult(ctx, {tileM, tileN});
   auto strides = getAsIndexOpFoldResult(ctx, {1, 1});
 
   Value zero = arith::ConstantIndexOp::create(builder, loc, 0);
   Value end = arith::ConstantIndexOp::create(builder, loc, k);
-  Value step = arith::ConstantIndexOp::create(builder, loc, target.getK());
+  Value step = arith::ConstantIndexOp::create(builder, loc, tileK);
 
   Value result = init;
   for (int64_t row : rows) {
@@ -72,7 +76,6 @@ Value buildActiveTiles(OpBuilder &builder, Location loc, Value lhs, Value rhs,
             auto kernel = KernelOp::create(
                 b, loc, TypeRange{acc.getType()},
                 ValueRange{lhsTile, rhsTile, iterArgs.front()});
-            kernel->setAttr("spruce.target", target);
             {
               OpBuilder::InsertionGuard guard(b);
               Block *body = b.createBlock(
@@ -126,14 +129,13 @@ struct LinalgGenericLowering : OpRewritePattern<linalg::GenericOp> {
           op, "expected static floating-point matrices");
 
     auto [m, n, k] = getMNK(aT, bT);
-    auto target = TargetAttr::get(rewriter.getContext(), 16, 8, 8);
 
     auto dims = sparsityAttr.getDims();
-    auto rows = getActiveTileOffsets(dims[0], m, target.getM());
-    auto cols = getActiveTileOffsets(dims[1], n, target.getN());
+    auto rows = getActiveTileOffsets(dims[0], m, tileM);
+    auto cols = getActiveTileOffsets(dims[1], n, tileN);
 
     Value result = buildActiveTiles(rewriter, op.getLoc(), a, b, c, *rows,
-                                    *cols, k, target);
+                                    *cols, k);
     rewriter.replaceOp(op, result);
     return success();
   }

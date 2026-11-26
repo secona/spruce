@@ -1,7 +1,6 @@
 // REQUIRES: enable-kernel-accumulator
 // RUN: spruce-opt -convert-linalg-to-spruce -verify-roundtrip %s | FileCheck %s --implicit-check-not=linalg.generic --implicit-check-not=linalg.fill --implicit-check-not=tensor.empty
 
-// CHECK-DAG: #[[TARGET:.*]] = #spruce.target<{m = 16, n = 8, k = 8}>
 // CHECK-DAG: #[[BSR:.*]] = #sparse_tensor.encoding
 #BSR = #sparse_tensor.encoding<{
   map = (d0, d1) -> (
@@ -23,7 +22,7 @@
 // CHECK-SAME:      %[[C_D:.*]] = %[[C]] : tensor<32x8xf32>
 // CHECK-SAME:    ) {
 // CHECK:           spruce.yield %[[C_D]] : tensor<32x8xf32>
-// CHECK:         } -> (tensor<32x8xf32>) {spruce.target = #[[TARGET]]}
+// CHECK:         } -> (tensor<32x8xf32>)
 // CHECK:         return %[[RESULT]] : tensor<32x8xf32>
 // CHECK:      }
 

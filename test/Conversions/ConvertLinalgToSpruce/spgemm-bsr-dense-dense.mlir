@@ -1,7 +1,6 @@
 // REQUIRES: enable-spgemm-bsr-dense-dense
 // RUN: spruce-opt -convert-linalg-to-spruce -verify-roundtrip %s | FileCheck %s
 
-// CHECK-DAG: #[[TARGET:.*]] = #spruce.target<{m = 16, n = 8, k = 8}>
 // CHECK-DAG: #[[BSR:.*]] = #sparse_tensor.encoding
 #BSR = #sparse_tensor.encoding<{
   map = (d0, d1) -> (
@@ -24,7 +23,7 @@
 // CHECK-SAME:      %[[B_D:.*]] = %[[B]] : tensor<16x8xf32>,
 // CHECK-SAME:      %[[C_D:.*]] = %[[C]] : tensor<32x8xf32>
 // CHECK:             spruce.yield %[[C_D]] : tensor<32x8xf32>
-// CHECK:         } -> (tensor<32x8xf32>) {spruce.target = #[[TARGET]]}
+// CHECK:         } -> (tensor<32x8xf32>)
 // CHECK:         return %[[RESULT]] : tensor<32x8xf32>
 // CHECK:      }
 

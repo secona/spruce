@@ -82,18 +82,15 @@ func.func @kernel_no_inputs_or_results() {
 
 // -----
 
-// CHECK-DAG: #[[TARGET:.*]] = #spruce.target<{m = 16, n = 8, k = 8}>
-#TARGET = #spruce.target<{m = 16, n = 8, k = 8}>
-
 // CHECK-LABEL: func.func @kernel_attributes(
 // CHECK:         spruce.kernel() {
 // CHECK:           spruce.yield
-// CHECK:         } {spruce.target = #[[TARGET]]}{{$}}
+// CHECK:         } {test_marker}{{$}}
 // CHECK:         return
 
 func.func @kernel_attributes() {
   spruce.kernel() {
     spruce.yield
-  } {spruce.target = #TARGET}
+  } {test_marker}
   return
 }

@@ -3,7 +3,6 @@
 // RUN: spruce-opt -convert-spruce-to-gpu="target=mma" -gpu-kernel-outlining -verify-roundtrip %s | FileCheck %s --check-prefix=OUTLINE
 // RUN: spruce-opt -pass-pipeline="builtin.module(convert-spruce-to-gpu{target=wmma},gpu-kernel-outlining,gpu.module(convert-gpu-to-nvvm))" %s | FileCheck %s --check-prefix=WMMA
 
-#target = #spruce.target<{m = 16, n = 8, k = 8}>
 !a = memref<16x8xf16, strided<[?, ?], offset: ?>>
 !b = memref<8x8xf16, strided<[?, ?], offset: ?>>
 
@@ -48,6 +47,6 @@ func.func @tile(%a: !a, %b: !b, %c: !a) -> !a {
   %result = spruce.kernel(%a_d = %a : !a, %b_d = %b : !b, %c_d = %c : !a) {
     spruce.mma %a_d, %b_d, %c_d : !a, !b, !a
     spruce.yield %c_d : !a
-  } -> (!a) {spruce.target = #target}
+  } -> (!a)
   return %result : !a
 }

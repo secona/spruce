@@ -7,30 +7,6 @@ class Spruce_Attr<string name, list<Trait> traits = []>
     : AttrDef<Spruce_Dialect, name, traits>;
 
 // -----------------------------------------------------------------------------
-// TargetAttr
-// -----------------------------------------------------------------------------
-
-def Spruce_TargetAttr : Spruce_Attr<"Target"> {
-  let mnemonic = "target";
-  let genMnemonicAlias = 1;
-
-  let description = [{
-    `#spruce.target` attribute defines the target lowering of a specific spruce
-    op. As of now, its primary use case is to define the matrix shape for an
-    `mma.sync` instruction.
-  }];
-
-  let parameters = (ins
-    "int64_t":$m,
-    "int64_t":$n,
-    "int64_t":$k);
-
-  let assemblyFormat = [{
-    `<` `{` struct(params) `}` `>`
-  }];
-}
-
-// -----------------------------------------------------------------------------
 // DimMaskAttr
 // -----------------------------------------------------------------------------
 
