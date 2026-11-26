@@ -15,6 +15,7 @@
 #include "llvm/Support/Error.h"
 #include "llvm/Support/raw_ostream.h"
 
+#include <algorithm>
 #include <stdexcept>
 
 namespace spruce {
@@ -90,11 +91,16 @@ void Kernel::compile(CompileTimes &times) {
   // SPA Analysis
   // ---------------------------------------------------------------------------
 
-  std::vector<std::shared_ptr<::Tensor>> inputs;
+  std::vector<std::shared_ptr<::Tensor>> inputs(ins.size());
+  std::transform(ins.begin(), ins.end(), inputs.begin(),
+                 [](const Tensor &t) { return t.adletTensor; });
 
-  std::shared_ptr<::Tensor> out;
+  auto rows = inputs[0]->sizes[0];
+  auto cols = inputs[1]->sizes[1];
+  std::shared_ptr<::Tensor> out =
+      std::make_shared<::Tensor>(std::vector<int>{rows, cols}, "out");
 
-  auto op = std::make_shared<Einsum>(inputs, out, einsum);
+  auto op = std::make_shared<::Einsum>(inputs, out, einsum);
 
   auto graph = ::Graph::build_graph(inputs, out, {op});
   graph.run_propagation();
