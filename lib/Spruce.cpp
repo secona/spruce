@@ -15,11 +15,13 @@
 #include "mlir/Parser/Parser.h"
 #include "mlir/Pass/PassManager.h"
 #include "mlir/Target/LLVMIR/Dialect/All.h"
+#include "llvm/ADT/STLExtras.h"
 #include "llvm/Support/DynamicLibrary.h"
 #include "llvm/Support/TargetSelect.h"
 
 #include <algorithm>
 #include <cstdlib>
+#include <fstream>
 #include <stdexcept>
 #include <utility>
 
@@ -278,6 +280,18 @@ void Timing::Aggregator::print() {
     double m = median(times);
     std::cout << std::string_view(key) << ": " << "median=" << m << " ms "
               << "n=" << times.size() << "\n";
+  }
+}
+
+void Timing::Aggregator::saveToCSV(const std::string &path) {
+  std::ofstream out(path);
+
+  out << "label,iter,time\n";
+
+  for (const auto &[label, times] : samples) {
+    for (const auto &[index, time] : llvm::enumerate(times)) {
+      out << std::string_view(label) << ',' << index << ',' << time << '\n';
+    }
   }
 }
 

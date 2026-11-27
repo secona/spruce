@@ -53,6 +53,8 @@ public:
     void iterate(int n, const std::function<Timing()> &f);
 
     void print();
+
+    void saveToCSV(const std::string &path);
   };
 };
 
