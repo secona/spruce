@@ -207,6 +207,15 @@ Timing Kernel::compileAndRun() {
     throw std::runtime_error(llvm::toString(std::move(error)));
 
   t.tick("run");
+
+  for (int64_t row = 0; row < c.sizes[0]; ++row) {
+    for (int64_t col = 0; col < c.sizes[1]; ++col) {
+      auto index = c.offset + row * c.strides[0] + col * c.strides[1];
+      std::cout << (col ? " " : "") << static_cast<float>(c.data[index]);
+    }
+    std::cout << '\n';
+  }
+
   return t;
 }
 
