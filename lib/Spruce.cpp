@@ -17,6 +17,7 @@
 #include "mlir/Target/LLVMIR/Dialect/All.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/Support/DynamicLibrary.h"
+#include "llvm/Support/MemoryBuffer.h"
 #include "llvm/Support/TargetSelect.h"
 
 #include <algorithm>
@@ -26,56 +27,6 @@
 #include <utility>
 
 namespace spruce {
-
-namespace {
-
-constexpr char kernelSource[] = R"mlir(
-func.func @spgemm(
-  %a: tensor<16x8xf16>,
-  %b: tensor<8x8xf16>
-) -> tensor<16x8xf16> {
-  %zero = arith.constant 0.0 : f16
-  %empty = tensor.empty() : tensor<16x8xf16>
-  %init = linalg.fill
-    ins(%zero : f16)
-    outs(%empty : tensor<16x8xf16>) -> tensor<16x8xf16>
-  %result = linalg.generic {
-    indexing_maps = [
-      affine_map<(m,n,k) -> (m,k)>,
-      affine_map<(m,n,k) -> (k,n)>,
-      affine_map<(m,n,k) -> (m,n)>
-    ],
-    iterator_types = [
-      "parallel",
-      "parallel",
-      "reduction"
-    ],
-    spruce.sparsity = #spruce.sparsity<[
-      #spruce.dim_mask<16, [65535]>,
-      #spruce.dim_mask<8, [255]>
-    ]>
-  } ins(%a, %b : tensor<16x8xf16>, tensor<8x8xf16>)
-    outs(%init : tensor<16x8xf16>) {
-    ^bb0(%lhs: f16, %rhs: f16, %acc: f16):
-      %product = arith.mulf %lhs, %rhs : f16
-      %sum = arith.addf %acc, %product : f16
-      linalg.yield %sum : f16
-  } -> tensor<16x8xf16>
-  return %result : tensor<16x8xf16>
-}
-
-func.func @smoke() {
-  %one = arith.constant 1 : index
-  gpu.launch blocks(%bx, %by, %bz) in (%gx = %one, %gy = %one, %gz = %one)
-             threads(%tx, %ty, %tz) in (%sx = %one, %sy = %one, %sz = %one) {
-    gpu.printf "test\0A"
-    gpu.terminator
-  }
-  return
-}
-)mlir";
-
-} // namespace
 
 // -----------------------------------------------------------------------------
 // InputTensor
@@ -97,11 +48,23 @@ void InputTensor::read() {
 }
 
 // -----------------------------------------------------------------------------
+// InputMLIR
+// -----------------------------------------------------------------------------
+
+void InputMLIR::read() {
+  auto file = llvm::MemoryBuffer::getFile(path);
+  if (!file)
+    throw std::runtime_error(file.getError().message());
+
+  src = (*file)->getBuffer().str();
+}
+
+// -----------------------------------------------------------------------------
 // Kernel
 // -----------------------------------------------------------------------------
 
-Kernel::Kernel(std::string einsum, std::vector<InputTensor> ins)
-    : einsum(einsum), ins(ins), mlirContext([]() {
+Kernel::Kernel(std::string einsum, InputMLIR src, std::vector<InputTensor> ins)
+    : einsum(einsum), mlirSrc(src), ins(ins), mlirContext([]() {
         mlir::DialectRegistry registry;
         registry.insert<mlir::spruce::SpruceDialect>();
         mlir::registerAllDialects(registry);
@@ -141,8 +104,8 @@ Timing Kernel::compile() {
   // Lowering MLIR
   // ---------------------------------------------------------------------------
 
-  // TODO: Create the kernel source another way.
-  auto module = mlir::parseSourceString<mlir::ModuleOp>(kernelSource, &mlirContext);
+  auto module =
+      mlir::parseSourceString<mlir::ModuleOp>(mlirSrc.src, &mlirContext);
   if (!module)
     throw std::runtime_error("Failed to parse the built-in Spruce kernel");
 

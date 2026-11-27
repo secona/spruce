@@ -27,6 +27,15 @@ struct InputTensor {
   void read();
 };
 
+struct InputMLIR {
+  std::string path;
+  std::string src;
+
+  InputMLIR(std::string path) : path(path) {}
+
+  void read();
+};
+
 class Timing {
   using Clock = std::chrono::steady_clock;
 
@@ -60,6 +69,7 @@ public:
 
 class Kernel {
   std::string einsum;
+  InputMLIR mlirSrc;
   std::vector<InputTensor> ins;
 
   mlir::MLIRContext mlirContext;
@@ -68,7 +78,7 @@ class Kernel {
   std::function<void(void **)> kernelFn;
 
 public:
-  Kernel(std::string einsum, std::vector<InputTensor> ins);
+  Kernel(std::string einsum, InputMLIR mlirSrc, std::vector<InputTensor> ins);
   ~Kernel();
 
   Timing compile();
