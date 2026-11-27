@@ -1,4 +1,5 @@
 #include "spruce/Spruce.h"
+#include "mlir/ExecutionEngine/CRunnerUtils.h"
 #include "spruce/Dialect/Spruce/IR/SpruceDialect.h"
 #include "spruce/Pipelines/SprucePipeline.h"
 
@@ -176,32 +177,33 @@ Timing Kernel::compileAndRun() {
   // ---------------------------------------------------------------------------
   // Invoke
   // ---------------------------------------------------------------------------
+  
+  _Float16 aData[16 * 8]{}, bData[8 * 8]{};
 
-  // std::vector<void *> args(7 * 2);
-  //
-  // auto denseA = (_Float16 *)std::malloc(inputs[0]->sizes[0] *
-  //                                       inputs[0]->sizes[1] * sizeof(_Float16));
-  // for (auto [crd, v] : *inputs[0]->data) {
-  //   denseA[crd[0] * inputs[0]->sizes[1] + crd[1]] = (_Float16)v;
-  // }
-  //
-  // args[0] = denseA;
-  // args[1] = denseA;
-  // args[2] = 0;
-  // args[3] = reinterpret_cast<void *>(inputs[0]->sizes[0]);
-  // args[4] = reinterpret_cast<void *>(inputs[0]->sizes[1]);
-  // args[5] = reinterpret_cast<void *>(1);
-  // args[6] = reinterpret_cast<void *>(1);
-  //
-  // args[7] = denseA;
-  // args[8] = denseA;
-  // args[9] = 0;
-  // args[10] = reinterpret_cast<void *>(inputs[0]->sizes[0]);
-  // args[11] = reinterpret_cast<void *>(inputs[0]->sizes[1]);
-  // args[12] = reinterpret_cast<void *>(1);
-  // args[13] = reinterpret_cast<void *>(1);
+  auto pack = [](const InputTensor &input, _Float16 *dst, int rows) {
+    taco::Tensor<double> matrix(taco::read(input.path, taco::Sparse));
+    for (const auto &[crd, value] : matrix) {
+      if (crd[0] >= 0 && crd[0] < rows && crd[1] >= 0 && crd[1] < 8)
+        dst[crd[0] * 8 + crd[1]] = static_cast<_Float16>(value);
+    }
+  };
 
-  if (auto error = engine->invokePacked("smoke"))
+  pack(ins[0], aData, 16);
+  pack(ins[1], bData, 8);
+
+  StridedMemRefType<_Float16, 2> a{aData, aData, 0, {16, 8}, {8, 1}};
+  StridedMemRefType<_Float16, 2> b{bData, bData, 0, {8, 8}, {8, 1}};
+  StridedMemRefType<_Float16, 2> c{};
+
+  void *args[] = {
+      &a.basePtr, &a.data, &a.offset,
+      &a.sizes[0], &a.sizes[1], &a.strides[0], &a.strides[1],
+      &b.basePtr, &b.data, &b.offset,
+      &b.sizes[0], &b.sizes[1], &b.strides[0], &b.strides[1],
+      &c,
+  };
+
+  if (auto error = engine->invokePacked("spgemm", args))
     throw std::runtime_error(llvm::toString(std::move(error)));
 
   t.tick("run");
