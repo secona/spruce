@@ -203,8 +203,13 @@ Timing Kernel::compileAndRun() {
       &c,
   };
 
-  if (auto error = engine->invokePacked("spgemm", args))
-    throw std::runtime_error(llvm::toString(std::move(error)));
+  engine->initialize();
+  auto maybeSpgemm = engine->lookupPacked("spgemm");
+  if (!maybeSpgemm)
+    throw std::runtime_error(llvm::toString(maybeSpgemm.takeError()));
+  auto spgemm = std::move(*maybeSpgemm);
+
+  spgemm(args);
 
   t.tick("run");
 
