@@ -63,7 +63,8 @@ void InputMLIR::read() {
 // Kernel
 // -----------------------------------------------------------------------------
 
-Kernel::Kernel(std::string einsum, InputMLIR src, std::vector<InputTensor> ins)
+Kernel::Kernel(std::string einsum, std::string src,
+               std::vector<InputTensor> ins)
     : einsum(einsum), mlirSrc(src), ins(ins), mlirContext([]() {
         mlir::DialectRegistry registry;
         registry.insert<mlir::spruce::SpruceDialect>();
@@ -105,7 +106,7 @@ Timing Kernel::compile() {
   // ---------------------------------------------------------------------------
 
   auto module =
-      mlir::parseSourceString<mlir::ModuleOp>(mlirSrc.src, &mlirContext);
+      mlir::parseSourceString<mlir::ModuleOp>(mlirSrc, &mlirContext);
   if (!module)
     throw std::runtime_error("Failed to parse the built-in Spruce kernel");
 

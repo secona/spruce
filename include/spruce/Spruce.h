@@ -69,7 +69,7 @@ public:
 
 class Kernel {
   std::string einsum;
-  InputMLIR mlirSrc;
+  std::string mlirSrc;
   std::vector<InputTensor> ins;
 
   mlir::MLIRContext mlirContext;
@@ -78,7 +78,7 @@ class Kernel {
   std::function<void(void **)> kernelFn;
 
 public:
-  Kernel(std::string einsum, InputMLIR mlirSrc, std::vector<InputTensor> ins);
+  Kernel(std::string einsum, std::string mlirSrc, std::vector<InputTensor> ins);
   ~Kernel();
 
   Timing compile();
