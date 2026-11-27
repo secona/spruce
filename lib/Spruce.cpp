@@ -112,7 +112,7 @@ Kernel::Kernel(std::string einsum, std::vector<InputTensor> ins)
 
 Kernel::~Kernel() = default;
 
-Timing Kernel::compileAndRun() {
+Timing Kernel::compile() {
   Timing t(5);
 
   // ---------------------------------------------------------------------------
@@ -170,7 +170,7 @@ Timing Kernel::compileAndRun() {
   auto maybeEngine = mlir::ExecutionEngine::create(*module, options);
   if (!maybeEngine)
     throw std::runtime_error(llvm::toString(maybeEngine.takeError()));
-  auto engine = std::move(*maybeEngine);
+  engine = std::move(*maybeEngine);
 
   engine->initialize();
   auto maybeSpgemm = engine->lookupPacked("spgemm");
@@ -179,6 +179,12 @@ Timing Kernel::compileAndRun() {
   kernelFn = *maybeSpgemm;
 
   t.tick("execution-engine");
+
+  return t;
+}
+
+Timing Kernel::run() {
+  Timing t(1);
 
   // ---------------------------------------------------------------------------
   // Invoke
