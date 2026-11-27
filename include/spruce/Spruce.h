@@ -3,6 +3,8 @@
 
 #include "mlir/IR/MLIRContext.h"
 #include <chrono>
+#include <functional>
+#include <map>
 #include <memory>
 #include <string>
 #include <vector>
@@ -43,6 +45,15 @@ public:
   void tick(const std::string &label);
 
   void print();
+
+  class Aggregator {
+    std::map<std::string, std::vector<double>> samples;
+
+  public:
+    void iterate(int n, const std::function<Timing()> &f);
+
+    void print();
+  };
 };
 
 class Kernel {

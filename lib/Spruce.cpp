@@ -208,13 +208,13 @@ Timing Kernel::compileAndRun() {
 
   t.tick("run");
 
-  for (int64_t row = 0; row < c.sizes[0]; ++row) {
-    for (int64_t col = 0; col < c.sizes[1]; ++col) {
-      auto index = c.offset + row * c.strides[0] + col * c.strides[1];
-      std::cout << (col ? " " : "") << static_cast<float>(c.data[index]);
-    }
-    std::cout << '\n';
-  }
+  // for (int64_t row = 0; row < c.sizes[0]; ++row) {
+  //   for (int64_t col = 0; col < c.sizes[1]; ++col) {
+  //     auto index = c.offset + row * c.strides[0] + col * c.strides[1];
+  //     std::cout << (col ? " " : "") << static_cast<float>(c.data[index]);
+  //   }
+  //   std::cout << '\n';
+  // }
 
   return t;
 }
@@ -235,6 +235,38 @@ void Timing::tick(const std::string &label) {
 void Timing::print() {
   for (auto &[label, time] : entries) {
     std::cout << label << ": " << time << " ms\n";
+  }
+}
+
+void Timing::Aggregator::iterate(int n, const std::function<Timing()> &f) {
+  for (int i = 0; i < n; ++i) {
+    Timing t = f();
+    for (const auto &[label, time] : t.entries) {
+      samples[label].push_back(time);
+    }
+  }
+}
+
+double median(std::vector<double> v) {
+  const size_t n = v.size();
+  const size_t mid = n / 2;
+
+  std::nth_element(v.begin(), v.begin() + mid, v.end());
+
+  if (n % 2 == 1) {
+    return v[mid];
+  }
+
+  const double lower_mid = *std::max_element(v.begin(), v.begin() + mid);
+  return lower_mid + (v[mid] - lower_mid) / 2.0;
+}
+
+void Timing::Aggregator::print() {
+  std::cout << "-- Timing::Aggregator --" << "\n";
+  for (auto &[key, times] : samples) {
+    double m = median(times);
+    std::cout << key << ": " << "median=" << m << " ms " << "n=" << times.size()
+              << "\n";
   }
 }
 
