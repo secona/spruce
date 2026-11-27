@@ -76,7 +76,7 @@ Kernel::Kernel(std::string einsum, std::string src,
         return mlir::MLIRContext(registry);
       }()) {}
 
-Kernel::~Kernel() = default;
+Kernel::~Kernel() { std::free(result.basePtr); }
 
 Timing Kernel::compile() {
   Timing t(5);
@@ -183,16 +183,10 @@ Timing Kernel::run() {
 
   kernelFn(args);
 
+  std::free(result.basePtr);
+  result = c;
+
   t.tick("run");
-
-  // for (int64_t row = 0; row < c.sizes[0]; ++row) {
-  //   for (int64_t col = 0; col < c.sizes[1]; ++col) {
-  //     auto index = c.offset + row * c.strides[0] + col * c.strides[1];
-  //     std::cout << (col ? " " : "") << static_cast<float>(c.data[index]);
-  //   }
-  //   std::cout << '\n';
-  // }
-
   return t;
 }
 

@@ -1,6 +1,7 @@
 #ifndef SPRUCE_SPRUCE_H
 #define SPRUCE_SPRUCE_H
 
+#include "mlir/ExecutionEngine/CRunnerUtils.h"
 #include "mlir/IR/MLIRContext.h"
 #include "llvm/ADT/StringMap.h"
 #include <chrono>
@@ -77,12 +78,16 @@ class Kernel {
   std::unique_ptr<mlir::ExecutionEngine> engine;
   std::function<void(void **)> kernelFn;
 
+  StridedMemRefType<_Float16, 2> result{};
+
 public:
   Kernel(std::string einsum, std::string mlirSrc, std::vector<InputTensor> ins);
   ~Kernel();
 
   Timing compile();
   Timing run();
+
+  StridedMemRefType<_Float16, 2> getResult() const { return result; }
 };
 
 } // namespace spruce

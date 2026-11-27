@@ -1,4 +1,5 @@
 #include "spruce/Spruce.h"
+#include <iostream>
 
 constexpr char mlirSrc[] = R"mlir(
 func.func @spgemm(
@@ -37,10 +38,10 @@ func.func @spgemm(
 )mlir";
 
 int main() {
-  spruce::InputTensor A("A", "a.mtx");
+  spruce::InputTensor A("A", "data/a.mtx");
   A.read();
 
-  spruce::InputTensor B("B", "b.mtx");
+  spruce::InputTensor B("B", "data/b.mtx");
   B.read();
 
   spruce::Kernel kernel("ij,jk->ik", mlirSrc, {A, B});
@@ -51,4 +52,14 @@ int main() {
   spruce::Timing::Aggregator aggregator;
   aggregator.iterate(50, [&kernel] { return kernel.run(); });
   aggregator.print();
+
+  auto c = kernel.getResult();
+
+  for (int64_t row = 0; row < c.sizes[0]; ++row) {
+    for (int64_t col = 0; col < c.sizes[1]; ++col) {
+      auto index = c.offset + row * c.strides[0] + col * c.strides[1];
+      std::cout << (col ? " " : "") << static_cast<float>(c.data[index]);
+    }
+    std::cout << '\n';
+  }
 }
