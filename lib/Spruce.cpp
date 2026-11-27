@@ -276,8 +276,8 @@ void Timing::Aggregator::print() {
   std::cout << "-- Timing::Aggregator --" << "\n";
   for (auto &[key, times] : samples) {
     double m = median(times);
-    std::cout << key << ": " << "median=" << m << " ms " << "n=" << times.size()
-              << "\n";
+    std::cout << std::string_view(key) << ": " << "median=" << m << " ms "
+              << "n=" << times.size() << "\n";
   }
 }
 

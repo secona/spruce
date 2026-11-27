@@ -2,9 +2,9 @@
 #define SPRUCE_SPRUCE_H
 
 #include "mlir/IR/MLIRContext.h"
+#include "llvm/ADT/StringMap.h"
 #include <chrono>
 #include <functional>
-#include <map>
 #include <memory>
 #include <string>
 #include <vector>
@@ -47,7 +47,7 @@ public:
   void print();
 
   class Aggregator {
-    std::map<std::string, std::vector<double>> samples;
+    llvm::StringMap<std::vector<double>> samples;
 
   public:
     void iterate(int n, const std::function<Timing()> &f);
