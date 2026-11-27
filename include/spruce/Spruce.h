@@ -55,9 +55,7 @@ public:
   Kernel(std::string einsum, std::vector<InputTensor> ins);
   ~Kernel();
 
-  Timing compile();
-
-  Timing run();
+  Timing compileAndRun();
 };
 
 } // namespace spruce

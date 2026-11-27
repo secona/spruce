@@ -18,6 +18,7 @@
 #include "llvm/Support/TargetSelect.h"
 
 #include <algorithm>
+#include <cstdlib>
 #include <stdexcept>
 #include <utility>
 
@@ -59,6 +60,16 @@ func.func @spgemm(
   } -> tensor<16x8xf16>
   return %result : tensor<16x8xf16>
 }
+
+func.func @smoke() {
+  %one = arith.constant 1 : index
+  gpu.launch blocks(%bx, %by, %bz) in (%gx = %one, %gy = %one, %gz = %one)
+             threads(%tx, %ty, %tz) in (%sx = %one, %sy = %one, %sz = %one) {
+    gpu.printf "test\0A"
+    gpu.terminator
+  }
+  return
+}
 )mlir";
 
 } // namespace
@@ -93,12 +104,14 @@ Kernel::Kernel(std::string einsum, std::vector<InputTensor> ins)
         mlir::registerAllDialects(registry);
         mlir::registerAllExtensions(registry);
         mlir::registerAllGPUToLLVMIRTranslations(registry);
+        mlir::registerAllToLLVMIRTranslations(registry);
+        mlir::registerBuiltinDialectTranslation(registry);
         return mlir::MLIRContext(registry);
       }()) {}
 
 Kernel::~Kernel() = default;
 
-Timing Kernel::compile() {
+Timing Kernel::compileAndRun() {
   Timing t(5);
 
   // ---------------------------------------------------------------------------
@@ -148,20 +161,48 @@ Timing Kernel::compile() {
   auto optPipeline = mlir::makeOptimizingTransformer(
       /*optLevel=*/3, /*sizeLevel=*/0,
       /*targetMachine=*/nullptr);
+  std::vector<llvm::StringRef> sharedLibs = {SPRUCE_CUDA_RUNTIME_LIBRARY};
   mlir::ExecutionEngineOptions options;
   options.transformer = optPipeline;
+  options.sharedLibPaths = sharedLibs;
 
-  auto engine = mlir::ExecutionEngine::create(*module, options)->get();
+  auto maybeEngine = mlir::ExecutionEngine::create(*module, options);
+  if (!maybeEngine)
+    throw std::runtime_error(llvm::toString(maybeEngine.takeError()));
+  auto engine = std::move(*maybeEngine);
 
   t.tick("execution-engine");
 
-  return t;
-}
+  // ---------------------------------------------------------------------------
+  // Invoke
+  // ---------------------------------------------------------------------------
 
-Timing Kernel::run() {
-  Timing t(1);
+  // std::vector<void *> args(7 * 2);
+  //
+  // auto denseA = (_Float16 *)std::malloc(inputs[0]->sizes[0] *
+  //                                       inputs[0]->sizes[1] * sizeof(_Float16));
+  // for (auto [crd, v] : *inputs[0]->data) {
+  //   denseA[crd[0] * inputs[0]->sizes[1] + crd[1]] = (_Float16)v;
+  // }
+  //
+  // args[0] = denseA;
+  // args[1] = denseA;
+  // args[2] = 0;
+  // args[3] = reinterpret_cast<void *>(inputs[0]->sizes[0]);
+  // args[4] = reinterpret_cast<void *>(inputs[0]->sizes[1]);
+  // args[5] = reinterpret_cast<void *>(1);
+  // args[6] = reinterpret_cast<void *>(1);
+  //
+  // args[7] = denseA;
+  // args[8] = denseA;
+  // args[9] = 0;
+  // args[10] = reinterpret_cast<void *>(inputs[0]->sizes[0]);
+  // args[11] = reinterpret_cast<void *>(inputs[0]->sizes[1]);
+  // args[12] = reinterpret_cast<void *>(1);
+  // args[13] = reinterpret_cast<void *>(1);
 
-  // TODO: Run the kernel.
+  if (auto error = engine->invokePacked("smoke"))
+    throw std::runtime_error(llvm::toString(std::move(error)));
 
   t.tick("run");
   return t;

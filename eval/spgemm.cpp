@@ -9,9 +9,6 @@ int main() {
 
   spruce::Kernel kernel("ij,jk->ik", {A, B});
 
-  spruce::Timing t = kernel.compile();
+  spruce::Timing t = kernel.compileAndRun();
   t.print();
-
-  spruce::Timing u = kernel.run();
-  u.print();
 }
