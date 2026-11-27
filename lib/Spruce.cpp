@@ -172,6 +172,12 @@ Timing Kernel::compileAndRun() {
     throw std::runtime_error(llvm::toString(maybeEngine.takeError()));
   auto engine = std::move(*maybeEngine);
 
+  engine->initialize();
+  auto maybeSpgemm = engine->lookupPacked("spgemm");
+  if (!maybeSpgemm)
+    throw std::runtime_error(llvm::toString(maybeSpgemm.takeError()));
+  kernelFn = *maybeSpgemm;
+
   t.tick("execution-engine");
 
   // ---------------------------------------------------------------------------
@@ -203,13 +209,7 @@ Timing Kernel::compileAndRun() {
       &c,
   };
 
-  engine->initialize();
-  auto maybeSpgemm = engine->lookupPacked("spgemm");
-  if (!maybeSpgemm)
-    throw std::runtime_error(llvm::toString(maybeSpgemm.takeError()));
-  auto spgemm = std::move(*maybeSpgemm);
-
-  spgemm(args);
+  kernelFn(args);
 
   t.tick("run");
 

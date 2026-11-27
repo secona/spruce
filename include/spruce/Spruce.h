@@ -13,7 +13,7 @@ class Tensor; // Adlet tensor
 
 namespace mlir {
 class ExecutionEngine;
-}
+} // namespace mlir
 
 namespace spruce {
 
@@ -61,6 +61,9 @@ class Kernel {
   std::vector<InputTensor> ins;
 
   mlir::MLIRContext mlirContext;
+
+  std::unique_ptr<mlir::ExecutionEngine> engine;
+  std::function<void(void **)> kernelFn;
 
 public:
   Kernel(std::string einsum, std::vector<InputTensor> ins);
