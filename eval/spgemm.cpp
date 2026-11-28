@@ -38,10 +38,10 @@ func.func @spgemm(
 )mlir";
 
 int main() {
-  spruce::InputTensor A("A", "data/a.mtx");
+  spruce::InputTensor A("A", "data/a_ones.mtx");
   A.read();
 
-  spruce::InputTensor B("B", "data/b.mtx");
+  spruce::InputTensor B("B", "data/b_ones.mtx");
   B.read();
 
   spruce::Kernel kernel("ij,jk->ik", mlirSrc, {A, B});
