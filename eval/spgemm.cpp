@@ -38,7 +38,7 @@ func.func @spgemm(
 )mlir";
 
 int main() {
-  spruce::InputTensor A("A", "data/a_ones.mtx");
+  spruce::InputTensor A("A", "data/a_top_ones.mtx");
   A.read();
 
   spruce::InputTensor B("B", "data/b_ones.mtx");
