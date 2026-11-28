@@ -2,7 +2,10 @@ add_subdirectory(Dialect)
 add_subdirectory(Conversions)
 add_subdirectory(Pipelines)
 
-add_library(Spruce Spruce.cpp)
+add_library(Spruce
+  Spruce.cpp
+  Analyses/SparsityAnalysis.cpp
+)
 find_library(SPRUCE_CUDA_RUNTIME_LIBRARY NAMES mlir_cuda_runtime
   HINTS ${LLVM_LIBRARY_DIRS} DOC "MLIR CUDA runtime for JIT-compiled kernels")
 if(NOT SPRUCE_CUDA_RUNTIME_LIBRARY)

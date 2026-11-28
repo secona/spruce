@@ -1,5 +1,5 @@
 #include "spruce/Spruce.h"
-#include "mlir/ExecutionEngine/CRunnerUtils.h"
+#include "spruce/Analyses/SparsityAnalysis.h"
 #include "spruce/Dialect/Spruce/IR/SpruceDialect.h"
 #include "spruce/Pipelines/SprucePipeline.h"
 
@@ -7,6 +7,7 @@
 
 #include "adlet/graph.hpp"
 
+#include "mlir/ExecutionEngine/CRunnerUtils.h"
 #include "mlir/ExecutionEngine/ExecutionEngine.h"
 #include "mlir/ExecutionEngine/OptUtils.h"
 #include "mlir/IR/BuiltinOps.h"
@@ -85,19 +86,11 @@ Timing Kernel::compile() {
   // SPA Analysis
   // ---------------------------------------------------------------------------
 
-  std::vector<std::shared_ptr<::Tensor>> inputs(ins.size());
+  std::vector<std::shared_ptr<adlet::Tensor>> inputs(ins.size());
   std::transform(ins.begin(), ins.end(), inputs.begin(),
                  [](const InputTensor &t) { return t.adletTensor; });
 
-  auto rows = inputs[0]->sizes[0];
-  auto cols = inputs[1]->sizes[1];
-  std::shared_ptr<::Tensor> out =
-      std::make_shared<::Tensor>(std::vector<int>{rows, cols}, "out");
-
-  auto op = std::make_shared<::Einsum>(inputs, out, einsum);
-
-  auto graph = ::Graph::build_graph(inputs, out, {op});
-  graph.run_propagation();
+  runSparsityAnalysis(inputs);
 
   t.tick("spa");
 
